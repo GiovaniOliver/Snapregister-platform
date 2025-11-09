@@ -21,13 +21,23 @@ jest.mock('jose', () => ({
   jwtVerify: jest.fn(),
 }));
 
+
 const { SignJWT: mockSignJWT, jwtVerify: mockJwtVerify } = jest.mocked(
   jest.requireMock<typeof import('jose')>('jose')
 );
 
+// Use manual mock for jose
+jest.mock('jose');
+const { mockSignJWT, mockJwtVerify } = jest.requireMock('jose') as {
+  mockSignJWT: jest.Mock;
+  mockJwtVerify: jest.Mock;
+};
+
+
 // Mock next/headers
 const mockCookiesGet = jest.fn();
 const mockCookiesDelete = jest.fn();
+
 const mockCookies = jest.fn(() =>
   Promise.resolve({
     get: mockCookiesGet,
@@ -44,6 +54,19 @@ const mockHeaders = jest.fn(() =>
 jest.mock('next/headers', () => ({
   cookies: mockCookies,
   headers: mockHeaders,
+
+const mockHeadersGet = jest.fn();
+
+jest.mock('next/headers', () => ({
+  __esModule: true,
+  cookies: jest.fn(() => ({
+    get: mockCookiesGet,
+    delete: mockCookiesDelete,
+  })),
+  headers: jest.fn(() => ({
+    get: mockHeadersGet,
+  })),
+
 }));
 
 // Mock Prisma
@@ -52,7 +75,11 @@ const mockPrismaSessionCreate = jest.fn();
 const mockPrismaSessionFindUnique = jest.fn();
 const mockPrismaSessionDelete = jest.fn();
 
+
 jest.mock('../lib/prisma.ts', () => ({
+=======
+jest.mock('../lib/prisma', () => ({
+
   __esModule: true,
   prisma: {
     user: {
@@ -65,6 +92,7 @@ jest.mock('../lib/prisma.ts', () => ({
     },
   },
 }));
+
 
 let bcrypt: typeof import('bcryptjs').default;
 let hashPassword: typeof import('../lib/auth').hashPassword;
@@ -89,7 +117,31 @@ beforeAll(async () => {
   } = authModule);
 });
 
+// Import after all mocks are set up
+import bcrypt from 'bcryptjs';
+import type { UserSession } from '../lib/auth';
+
+type AuthModule = typeof import('../lib/auth');
+
+let hashPassword: AuthModule['hashPassword'];
+let verifyPassword: AuthModule['verifyPassword'];
+let createSession: AuthModule['createSession'];
+let getSession: AuthModule['getSession'];
+let destroySession: AuthModule['destroySession'];
+let requireAuth: AuthModule['requireAuth'];
+
+
 describe('Authentication Module', () => {
+  beforeAll(async () => {
+    const auth = await import('../lib/auth');
+    hashPassword = auth.hashPassword;
+    verifyPassword = auth.verifyPassword;
+    createSession = auth.createSession;
+    getSession = auth.getSession;
+    destroySession = auth.destroySession;
+    requireAuth = auth.requireAuth;
+  });
+
   const mockUser = {
     id: 'user-123',
     email: 'test@example.com',

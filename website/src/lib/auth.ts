@@ -55,12 +55,30 @@ export async function createSession(userId: string): Promise<string> {
   return token;
 }
 
+function safeHeaders(): ReturnType<typeof headers> | null {
+  try {
+    return headers();
+  } catch {
+    console.debug('[Auth] headers() unavailable in current context');
+    return null;
+  }
+}
+
+function safeCookies(): ReturnType<typeof cookies> | null {
+  try {
+    return cookies();
+  } catch {
+    console.debug('[Auth] cookies() unavailable in current context');
+    return null;
+  }
+}
+
 export async function getSession(): Promise<UserSession | null> {
   let token: string | undefined;
 
   // Try to get token from Authorization header (for mobile apps)
-  const headersList = await headers();
-  const authHeader = headersList.get('authorization');
+  const headersList = safeHeaders();
+  const authHeader = headersList?.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
     token = authHeader.substring(7); // Remove "Bearer " prefix
     console.debug('[Auth] Session token found in Authorization header');
@@ -68,8 +86,8 @@ export async function getSession(): Promise<UserSession | null> {
 
   // Fallback to cookie (for web browsers)
   if (!token) {
-    const cookieStore = await cookies();
-    token = cookieStore.get('session')?.value;
+    const cookieStore = safeCookies();
+    token = cookieStore?.get('session')?.value;
     if (token) {
       console.debug('[Auth] Session token found in cookies');
     }
@@ -109,7 +127,12 @@ export async function getSession(): Promise<UserSession | null> {
 }
 
 export async function destroySession() {
-  const cookieStore = await cookies();
+  const cookieStore = safeCookies();
+
+  if (!cookieStore) {
+    return;
+  }
+
   const token = cookieStore.get('session')?.value;
 
   if (token) {

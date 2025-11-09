@@ -1,7 +1,13 @@
-export class SignJWT {
-  private payload: any;
+import { jest } from '@jest/globals';
 
-  constructor(payload: any) {
+export const mockSignJWT = jest.fn(async (payload: unknown) => {
+  return 'mock-jwt-token-' + JSON.stringify(payload ?? {});
+});
+
+export class SignJWT {
+  private payload: unknown;
+
+  constructor(payload: unknown) {
     this.payload = payload;
   }
 
@@ -17,17 +23,19 @@ export class SignJWT {
     return this;
   }
 
-  async sign() {
-    return 'mock-jwt-token-' + JSON.stringify(this.payload);
+  sign() {
+    return mockSignJWT(this.payload);
   }
 }
 
-export async function jwtVerify(token: string, secret: any) {
+export const mockJwtVerify = jest.fn(async (token: string) => {
   if (token.startsWith('mock-jwt-token-')) {
     const payloadStr = token.replace('mock-jwt-token-', '');
     return {
-      payload: JSON.parse(payloadStr)
+      payload: JSON.parse(payloadStr),
     };
   }
   throw new Error('Invalid token');
-}
+});
+
+export const jwtVerify = mockJwtVerify;
