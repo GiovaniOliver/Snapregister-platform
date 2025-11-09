@@ -11,6 +11,9 @@ module.exports = {
     '^.+\\.(ts|tsx)$': 'babel-jest',
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(expo|@expo|@react-native|react-native|@unimodules)/)',
+  ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   testMatch: [
     '**/__tests__/**/*.(test|spec).(ts|tsx)',
