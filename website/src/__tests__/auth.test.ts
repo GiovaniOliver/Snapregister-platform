@@ -1,18 +1,49 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import type { UserSession } from '../lib/auth';
 
-// Use manual mock for jose
-jest.mock('jose');
+const createSignJWTInstance = (payload: unknown, token?: string) => {
+  const sign = jest.fn().mockResolvedValue(
+    token ?? `mock-jwt-token-${JSON.stringify(payload)}`
+  );
+
+  return {
+    setProtectedHeader: jest.fn().mockReturnThis(),
+    setIssuedAt: jest.fn().mockReturnThis(),
+    setExpirationTime: jest.fn().mockReturnThis(),
+    sign,
+  };
+};
+
+jest.mock('jose', () => ({
+  SignJWT: jest.fn().mockImplementation((payload: unknown) =>
+    createSignJWTInstance(payload)
+  ),
+  jwtVerify: jest.fn(),
+}));
+
+const { SignJWT: mockSignJWT, jwtVerify: mockJwtVerify } = jest.mocked(
+  jest.requireMock<typeof import('jose')>('jose')
+);
 
 // Mock next/headers
 const mockCookiesGet = jest.fn();
 const mockCookiesDelete = jest.fn();
-const mockCookies = jest.fn();
-
-jest.mock('next/headers', () => ({
-  cookies: jest.fn(() => Promise.resolve({
+const mockCookies = jest.fn(() =>
+  Promise.resolve({
     get: mockCookiesGet,
     delete: mockCookiesDelete,
-  })),
+  })
+);
+const mockHeadersGet = jest.fn();
+const mockHeaders = jest.fn(() =>
+  Promise.resolve({
+    get: mockHeadersGet,
+  })
+);
+
+jest.mock('next/headers', () => ({
+  cookies: mockCookies,
+  headers: mockHeaders,
 }));
 
 // Mock Prisma
@@ -21,7 +52,8 @@ const mockPrismaSessionCreate = jest.fn();
 const mockPrismaSessionFindUnique = jest.fn();
 const mockPrismaSessionDelete = jest.fn();
 
-jest.mock('../lib/prisma', () => ({
+jest.mock('../lib/prisma.ts', () => ({
+  __esModule: true,
   prisma: {
     user: {
       findUnique: mockPrismaUserFindUnique,
@@ -34,17 +66,28 @@ jest.mock('../lib/prisma', () => ({
   },
 }));
 
-// Import after all mocks are set up
-import bcrypt from 'bcryptjs';
-import {
-  hashPassword,
-  verifyPassword,
-  createSession,
-  getSession,
-  destroySession,
-  requireAuth,
-  type UserSession,
-} from '../lib/auth';
+let bcrypt: typeof import('bcryptjs').default;
+let hashPassword: typeof import('../lib/auth').hashPassword;
+let verifyPassword: typeof import('../lib/auth').verifyPassword;
+let createSession: typeof import('../lib/auth').createSession;
+let getSession: typeof import('../lib/auth').getSession;
+let destroySession: typeof import('../lib/auth').destroySession;
+let requireAuth: typeof import('../lib/auth').requireAuth;
+
+beforeAll(async () => {
+  const bcryptModule = await import('bcryptjs');
+  bcrypt = bcryptModule.default;
+
+  const authModule = await import('../lib/auth');
+  ({
+    hashPassword,
+    verifyPassword,
+    createSession,
+    getSession,
+    destroySession,
+    requireAuth,
+  } = authModule);
+});
 
 describe('Authentication Module', () => {
   const mockUser = {
@@ -182,7 +225,9 @@ describe('Authentication Module', () => {
         const mockToken = 'mock-jwt-token';
         const beforeCreate = Date.now();
 
-        mockSignJWT.mockResolvedValueOnce(mockToken);
+        mockSignJWT.mockImplementationOnce((payload) =>
+          createSignJWTInstance(payload, mockToken)
+        );
         mockPrismaUserFindUnique.mockResolvedValueOnce(mockUser);
         mockPrismaSessionCreate.mockResolvedValueOnce({
           id: 'session-456',
@@ -437,7 +482,9 @@ describe('Authentication Module', () => {
 
       // Step 3: Session is created
       const mockToken = 'session-token-abc';
-      mockSignJWT.mockResolvedValueOnce(mockToken);
+      mockSignJWT.mockImplementationOnce((payload) =>
+        createSignJWTInstance(payload, mockToken)
+      );
       mockPrismaUserFindUnique.mockResolvedValueOnce(mockUser);
       mockPrismaSessionCreate.mockResolvedValueOnce({
         id: 'session-456',
@@ -586,9 +633,15 @@ describe('Authentication Module', () => {
       const mockToken3 = 'token-3';
 
       mockSignJWT
-        .mockResolvedValueOnce(mockToken1)
-        .mockResolvedValueOnce(mockToken2)
-        .mockResolvedValueOnce(mockToken3);
+        .mockImplementationOnce((payload) =>
+          createSignJWTInstance(payload, mockToken1)
+        )
+        .mockImplementationOnce((payload) =>
+          createSignJWTInstance(payload, mockToken2)
+        )
+        .mockImplementationOnce((payload) =>
+          createSignJWTInstance(payload, mockToken3)
+        );
 
       mockPrismaUserFindUnique.mockResolvedValue(mockUser);
       mockPrismaSessionCreate.mockResolvedValue({
