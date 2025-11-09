@@ -2,16 +2,24 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 
 // Use manual mock for jose
 jest.mock('jose');
+const { mockSignJWT, mockJwtVerify } = jest.requireMock('jose') as {
+  mockSignJWT: jest.Mock;
+  mockJwtVerify: jest.Mock;
+};
 
 // Mock next/headers
 const mockCookiesGet = jest.fn();
 const mockCookiesDelete = jest.fn();
-const mockCookies = jest.fn();
+const mockHeadersGet = jest.fn();
 
 jest.mock('next/headers', () => ({
-  cookies: jest.fn(() => Promise.resolve({
+  __esModule: true,
+  cookies: jest.fn(() => ({
     get: mockCookiesGet,
     delete: mockCookiesDelete,
+  })),
+  headers: jest.fn(() => ({
+    get: mockHeadersGet,
   })),
 }));
 
@@ -22,6 +30,7 @@ const mockPrismaSessionFindUnique = jest.fn();
 const mockPrismaSessionDelete = jest.fn();
 
 jest.mock('../lib/prisma', () => ({
+  __esModule: true,
   prisma: {
     user: {
       findUnique: mockPrismaUserFindUnique,
@@ -36,17 +45,28 @@ jest.mock('../lib/prisma', () => ({
 
 // Import after all mocks are set up
 import bcrypt from 'bcryptjs';
-import {
-  hashPassword,
-  verifyPassword,
-  createSession,
-  getSession,
-  destroySession,
-  requireAuth,
-  type UserSession,
-} from '../lib/auth';
+import type { UserSession } from '../lib/auth';
+
+type AuthModule = typeof import('../lib/auth');
+
+let hashPassword: AuthModule['hashPassword'];
+let verifyPassword: AuthModule['verifyPassword'];
+let createSession: AuthModule['createSession'];
+let getSession: AuthModule['getSession'];
+let destroySession: AuthModule['destroySession'];
+let requireAuth: AuthModule['requireAuth'];
 
 describe('Authentication Module', () => {
+  beforeAll(async () => {
+    const auth = await import('../lib/auth');
+    hashPassword = auth.hashPassword;
+    verifyPassword = auth.verifyPassword;
+    createSession = auth.createSession;
+    getSession = auth.getSession;
+    destroySession = auth.destroySession;
+    requireAuth = auth.requireAuth;
+  });
+
   const mockUser = {
     id: 'user-123',
     email: 'test@example.com',
