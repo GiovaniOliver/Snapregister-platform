@@ -1,4 +1,6 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { calculateWarrantyEndDate } from '../services/warranty-calculator';
+import { WarrantyType } from '../types/warranty';
 
 // Mock Prisma
 const mockPrismaWarrantyContractCreate = jest.fn();
@@ -35,6 +37,32 @@ describe('Warranty Service', () => {
       expect(expiryDate.toISOString().split('T')[0]).toBe('2025-01-01');
     });
 
+    it('should clamp Jan 31 to Feb 29 in leap years', () => {
+      const startDate = new Date('2024-01-31');
+
+      const expiryDate = calculateWarrantyEndDate(
+        startDate,
+        1,
+        WarrantyType.LIMITED
+      );
+
+      expect(expiryDate).not.toBeNull();
+      expect(expiryDate?.toISOString().split('T')[0]).toBe('2024-02-29');
+    });
+
+    it('should clamp Jan 31 to Feb 28 in non-leap years', () => {
+      const startDate = new Date('2023-01-31');
+
+      const expiryDate = calculateWarrantyEndDate(
+        startDate,
+        1,
+        WarrantyType.LIMITED
+      );
+
+      expect(expiryDate).not.toBeNull();
+      expect(expiryDate?.toISOString().split('T')[0]).toBe('2023-02-28');
+    });
+
     it('should handle multi-year warranties', () => {
       const startDate = new Date('2024-01-01');
       const durationMonths = 36; // 3 years
@@ -47,13 +75,15 @@ describe('Warranty Service', () => {
 
     it('should handle leap years correctly', () => {
       const startDate = new Date('2024-02-29'); // Leap year
-      const durationMonths = 12;
 
-      const expiryDate = new Date(startDate);
-      expiryDate.setMonth(expiryDate.getMonth() + durationMonths);
+      const expiryDate = calculateWarrantyEndDate(
+        startDate,
+        12,
+        WarrantyType.LIMITED
+      );
 
-      // Should be Feb 28 or 29 depending on next year
-      expect(expiryDate.getMonth()).toBe(1); // February
+      expect(expiryDate).not.toBeNull();
+      expect(expiryDate?.getMonth()).toBe(1); // February
     });
   });
 
