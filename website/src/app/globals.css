@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* SnapRegister Brand Colors */
+    --brand-navy: 203 52% 22%; /* #1A3A52 - Primary Dark */
+    --brand-teal: 174 56% 50%; /* #3DBFB0 - Primary Accent */
+    --brand-navy-light: 203 52% 35%; /* Lighter navy for hover states */
+    --brand-teal-light: 174 56% 65%; /* Lighter teal for hover states */
+    --brand-teal-dark: 174 56% 35%; /* Darker teal for active states */
+
+    /* Base Theme Colors */
+    --background: 0 0% 100%;
+    --foreground: 203 52% 22%; /* Navy for primary text */
+    --card: 0 0% 100%;
+    --card-foreground: 203 52% 22%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 203 52% 22%;
+    --primary: 174 56% 50%; /* Teal accent */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 203 10% 95%;
+    --secondary-foreground: 203 52% 22%;
+    --muted: 203 10% 95%;
+    --muted-foreground: 203 25% 45%;
+    --accent: 174 56% 50%; /* Teal accent */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 203 15% 88%;
+    --input: 203 15% 88%;
+    --ring: 174 56% 50%; /* Teal focus ring */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 203 52% 10%;
+    --foreground: 0 0% 98%;
+    --card: 203 52% 15%;
+    --card-foreground: 0 0% 98%;
+    --popover: 203 52% 15%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 174 56% 50%; /* Teal accent */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 203 40% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 203 40% 20%;
+    --muted-foreground: 203 20% 65%;
+    --accent: 174 56% 50%; /* Teal accent */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 203 40% 25%;
+    --input: 203 40% 25%;
+    --ring: 174 56% 50%; /* Teal focus ring */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom animations for AI processing */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(61, 191, 176, 0.7); /* Teal glow */
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 10px rgba(61, 191, 176, 0);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Camera overlay styles */
+.camera-guide-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 3px dashed rgba(61, 191, 176, 0.8); /* Teal border */
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* Confidence score colors */
+.confidence-high {
+  @apply text-green-600 bg-green-50 border-green-200;
+}
+
+.confidence-medium {
+  @apply text-amber-600 bg-amber-50 border-amber-200;
+}
+
+.confidence-low {
+  @apply text-red-600 bg-red-50 border-red-200;
+}
+
+/* Smooth transitions */
+* {
+  @apply transition-colors duration-200;
+}

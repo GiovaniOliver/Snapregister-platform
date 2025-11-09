@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  warranty-analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: warranty-analyzer
+    ports:
+      - "8001:8001"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://user:password@postgres:5432/snapregister}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8001
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - warranty-uploads:/tmp/warranty-uploads
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - snapregister-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: warranty-postgres
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=snapregister
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - snapregister-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: warranty-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - snapregister-network
+
+volumes:
+  warranty-uploads:
+  postgres-data:
+  redis-data:
+
+networks:
+  snapregister-network:
+    driver: bridge

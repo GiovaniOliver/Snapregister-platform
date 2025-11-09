@@ -1,0 +1,9 @@
+{
+  "name": "SnapRegister",
+  "short_name": "SnapRegister",
+  "description": "Never miss a warranty expiration. Track products, get alerts, and register with manufacturers instantly.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#667eea"
+}

@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "SnapRegister",
+    "slug": "snapregister",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.snapregister.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "SnapRegister needs access to your camera to capture device information and warranty cards.",
+        "NSPhotoLibraryUsageDescription": "SnapRegister needs access to your photo library to select warranty documents and device photos.",
+        "NSPhotoLibraryAddUsageDescription": "SnapRegister needs permission to save captured images to your photo library."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.snapregister.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ],
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow SnapRegister to access your camera to capture device information and warranty cards."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow SnapRegister to access your photos to select warranty documents and device images."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      },
+      "environment": "dev"
+    }
+  }
+}
