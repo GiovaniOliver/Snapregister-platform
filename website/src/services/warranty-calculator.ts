@@ -7,7 +7,7 @@ import {
   WarrantyNotificationType,
   NotificationSchedule,
 } from '@/types/warranty';
-import { addMonths, differenceInDays, isBefore, isAfter, addDays } from 'date-fns';
+import { addMonths, differenceInDays, isAfter, addDays, lastDayOfMonth } from 'date-fns';
 
 /**
  * Calculate warranty end date based on start date and duration
@@ -21,7 +21,25 @@ export function calculateWarrantyEndDate(
     return null; // Lifetime warranties don't expire
   }
 
-  return addMonths(startDate, durationMonths);
+  const baseTargetDate = addMonths(startDate, durationMonths);
+
+  const targetMonthAnchor = new Date(
+    baseTargetDate.getFullYear(),
+    baseTargetDate.getMonth(),
+    1,
+    baseTargetDate.getHours(),
+    baseTargetDate.getMinutes(),
+    baseTargetDate.getSeconds(),
+    baseTargetDate.getMilliseconds()
+  );
+
+  const lastValidDay = lastDayOfMonth(targetMonthAnchor).getDate();
+  const clampedDay = Math.min(startDate.getDate(), lastValidDay);
+
+  const clampedDate = new Date(targetMonthAnchor);
+  clampedDate.setDate(clampedDay);
+
+  return clampedDate;
 }
 
 /**
