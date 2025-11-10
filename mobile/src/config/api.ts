@@ -21,12 +21,14 @@ const getPlatformApiUrl = (baseUrl: string): string => {
 };
 
 // Environment-specific base URLs
+const DEFAULT_DEV_BASE_URL = 'http://localhost:3000';
+
 const API_CONFIG = {
   dev: {
     baseUrl: getPlatformApiUrl(
       process.env.EXPO_PUBLIC_API_URL ||
       process.env.API_URL ||
-      (Platform.OS === 'ios' ? 'http://192.168.1.15:3004' : 'http://localhost:3004')
+      DEFAULT_DEV_BASE_URL
     ),
   },
   staging: {
