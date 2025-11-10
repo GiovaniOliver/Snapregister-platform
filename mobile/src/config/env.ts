@@ -16,20 +16,22 @@ const getPlatformApiUrl = (baseUrl: string): string => {
   return baseUrl;
 };
 
+const DEFAULT_DEV_API_URL = 'http://localhost:3000/api';
+const DEFAULT_DEV_WEB_URL = 'http://localhost:3000';
+
 const ENV = {
   dev: {
-    // For iOS simulator, use your computer's local IP address
+    // For iOS simulator, localhost resolves correctly
     // For Android emulator, it will automatically use 10.0.2.2
-    // Default: Try environment variable, fallback to local IP for iOS
     apiUrl: getPlatformApiUrl(
       process.env.EXPO_PUBLIC_API_URL ||
       process.env.API_URL ||
-      (Platform.OS === 'ios' ? 'http://192.168.1.15:3004/api' : 'http://localhost:3004/api')
+      DEFAULT_DEV_API_URL
     ),
     webUrl: getPlatformApiUrl(
       process.env.EXPO_PUBLIC_WEB_URL ||
       process.env.WEB_URL ||
-      (Platform.OS === 'ios' ? 'http://192.168.1.15:3004' : 'http://localhost:3004')
+      DEFAULT_DEV_WEB_URL
     ),
   },
   staging: {
