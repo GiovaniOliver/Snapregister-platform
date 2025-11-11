@@ -109,3 +109,4 @@ console.log('2. Verify it shows: "Ready on http://0.0.0.0:3004"');
 console.log('3. Test from phone browser: http://192.168.1.15:3004/api/auth/session');
 console.log('4. If phone can\'t reach, check Windows Firewall settings\n');
 
+
