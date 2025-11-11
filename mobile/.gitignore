@@ -49,3 +49,5 @@ test-api-connection.js
 # IDE
 .idea/
 *.iml
+
+.vercel

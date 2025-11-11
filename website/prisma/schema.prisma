@@ -2,8 +2,9 @@
 // SQLite for MVP, PostgreSQL for production
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      ="prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza19NTGNYWERKQndrT1ZNbXZteG85R0ciLCJhcGlfa2V5IjoiMDFLOVFDVjBBWTNZM0NFNUg2QTczMlhCWEMiLCJ0ZW5hbnRfaWQiOiI4ZGViMmJkN2Y5Y2Q2ZGJlODcwZjcwYjkyYjZkZWFlMGIzOWU1NDU4NGRjY2RjNGI2OTYzNWRhMjhkZTk4ZDg3IiwiaW50ZXJuYWxfc2VjcmV0IjoiMjAzOTUzZWEtYzczMi00YTk5LWE3MjktOTIwODIyMmUxOTczIn0.54apvyvF239Nhzmz6iqm1XDuEl9TIHfGVUq5-bCQ04Q"
+
 }
 
 generator client {
