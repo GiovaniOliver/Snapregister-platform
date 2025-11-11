@@ -38,10 +38,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       // Navigation will be handled automatically by auth state change
     } catch (error: any) {
       console.error('Login error:', error);
-      Alert.alert(
-        'Login Failed',
-        error.response?.data?.error || 'Invalid email or password. Please try again.'
-      );
+      const errorMessage = error?.message || error?.response?.data?.error || 'Invalid email or password. Please try again.';
+      Alert.alert('Login Failed', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -103,7 +101,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             style={styles.forgotPassword}
             onPress={() => {
-              Alert.alert('Forgot Password', 'Password reset feature coming soon!');
+              navigation.navigate('ForgotPassword');
             }}
           >
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>

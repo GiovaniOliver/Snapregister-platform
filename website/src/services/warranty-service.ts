@@ -1,6 +1,5 @@
 // Warranty Service - Database Operations
 
-import { PrismaClient } from '@prisma/client';
 import {
   WarrantyType,
   WarrantyStatus,
@@ -16,8 +15,7 @@ import {
   calculateDaysRemaining,
 } from './warranty-calculator';
 import { addDays, subDays, startOfDay } from 'date-fns';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 /**
  * Get warranties expiring within specified days

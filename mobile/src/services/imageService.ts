@@ -6,7 +6,7 @@
 import * as FileSystem from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { getAuthToken, clearAuthToken, ApiError } from './api';
-import { API_URL } from '../config/env';
+import { API_URL } from '../config/api';
 import { MultiImageCapture, ProductAnalysisResult } from '../types';
 
 // Configuration constants

@@ -1,8 +1,7 @@
 import { uploadFile } from './api';
-import { API_ENDPOINTS } from '../config/env';
+import { API_ENDPOINTS, API_URL } from '../config/api';
 import { AIExtractedData, ProductAnalysisResult, MultiImageCapture } from '../types';
 import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../config/env';
 
 export const aiService = {
   // Analyze image and extract device information

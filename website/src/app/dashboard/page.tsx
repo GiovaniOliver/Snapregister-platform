@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
-import { clearInvalidSession } from '@/app/actions/auth';
 import DashboardLayoutWrapper from '@/components/DashboardLayoutWrapper';
 import SessionGuard from '@/components/SessionGuard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,23 +10,17 @@ import { Camera, Package, Shield, TrendingUp, Clock, AlertCircle } from 'lucide-
 export default async function DashboardPage() {
   const session = await getSession();
 
-  // SECURITY: If no session despite middleware protection, clear invalid cookie and redirect
+  // SECURITY: If no session despite middleware protection, redirect to login
   // This scenario should rarely occur now that middleware validates JWT signatures
   // However, we keep this as defense-in-depth for edge cases like:
   // - Session deleted from DB after middleware check but before page render
   // - Race conditions in session validation
   // - Database connectivity issues during middleware check
+  // Note: Cookie clearing is handled by middleware, not here, to avoid Next.js cookie modification errors
   if (!session) {
-    console.error('[Dashboard] No session found despite middleware protection - this should rarely occur');
-
-    // SECURITY: Clean up invalid session cookie to prevent redirect loops
-    // This is an async operation but we don't await it to prevent blocking
-    clearInvalidSession().catch((error) => {
-      console.error('[Dashboard] Failed to clear invalid session:', error);
-    });
-
+    console.warn('[Dashboard] No session found despite middleware protection - this should rarely occur');
     // SECURITY: Redirect with descriptive error to inform user
-    // This will only execute once per request due to Next.js redirect behavior
+    // Middleware already handles cookie clearing for invalid JWTs
     redirect('/login?error=invalid_session');
   }
 

@@ -2,10 +2,8 @@
 // This should be called by a cron job daily
 
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { Resend } from 'resend';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Notification thresholds (days before expiry)

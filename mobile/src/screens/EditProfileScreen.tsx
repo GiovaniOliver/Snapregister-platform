@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,18 @@ const EditProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
+    addressLine2: user?.addressLine2 || '',
+    city: user?.city || '',
+    state: user?.state || '',
+    zipCode: user?.zipCode || '',
+    country: user?.country || 'US',
+    registrationEmail: user?.registrationEmail || '',
+    dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
+    companyName: user?.companyName || '',
+    alternatePhone: user?.alternatePhone || '',
+    preferredContact: user?.preferredContact || 'EMAIL',
   });
 
   const [avatarUri, setAvatarUri] = useState<string | null>(user?.avatar || null);
@@ -41,14 +53,60 @@ const EditProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       newErrors.lastName = 'Last name is required';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
+    if (formData.registrationEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.registrationEmail)) {
+      newErrors.registrationEmail = 'Invalid email format';
+    }
+
+    if (formData.phone && !/^[\d\s\-\(\)]+$/.test(formData.phone)) {
+      newErrors.phone = 'Invalid phone format';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  useEffect(() => {
+    // Load profile data when component mounts
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const response = await api.get('/profile');
+      if (response.data && response.data.profile) {
+        const profile = response.data.profile;
+        setFormData({
+          firstName: profile.firstName || '',
+          lastName: profile.lastName || '',
+          email: user?.email || '', // Keep login email separate
+          phone: profile.phone || '',
+          address: profile.address || '',
+          addressLine2: profile.addressLine2 || '',
+          city: profile.city || '',
+          state: profile.state || '',
+          zipCode: profile.zipCode || '',
+          country: profile.country || 'US',
+          registrationEmail: profile.registrationEmail || '',
+          dateOfBirth: profile.dateOfBirth 
+            ? new Date(profile.dateOfBirth).toISOString().split('T')[0] 
+            : '',
+          companyName: profile.companyName || '',
+          alternatePhone: profile.alternatePhone || '',
+          preferredContact: profile.preferredContact || 'EMAIL',
+        });
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      // If profile endpoint fails, use basic user data
+      if (user) {
+        setFormData(prev => ({
+          ...prev,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          email: user.email || '',
+        }));
+      }
+    }
   };
 
   const handlePickImage = async () => {
@@ -83,22 +141,54 @@ const EditProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
     setLoading(true);
     try {
-      // Prepare update data
+      // Prepare update data (exclude login email - that's managed separately)
       const updateData: any = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
-        email: formData.email.trim(),
+        phone: formData.phone.trim() || null,
+        address: formData.address.trim() || null,
+        addressLine2: formData.addressLine2.trim() || null,
+        city: formData.city.trim() || null,
+        state: formData.state.trim() || null,
+        zipCode: formData.zipCode.trim() || null,
+        country: formData.country.trim() || 'US',
+        registrationEmail: formData.registrationEmail.trim() || null,
+        dateOfBirth: formData.dateOfBirth || null,
+        companyName: formData.companyName.trim() || null,
+        alternatePhone: formData.alternatePhone.trim() || null,
+        preferredContact: formData.preferredContact,
       };
 
       // If avatar changed, upload it first
-      if (avatarUri && avatarUri !== user?.avatar) {
-        // TODO: Implement avatar upload to backend
-        // For now, we'll include the URI in the update
+      if (avatarUri && avatarUri !== user?.avatar && !avatarUri.startsWith('http')) {
+        try {
+          // Upload avatar to Bunny.net via backend
+          const formData = new FormData();
+          formData.append('file', {
+            uri: avatarUri,
+            name: `avatar_${Date.now()}.jpg`,
+            type: 'image/jpeg',
+          } as any);
+          formData.append('folder', 'avatars');
+
+          const uploadResponse = await api.post('/upload', formData);
+
+          if (uploadResponse.data && uploadResponse.data.success && uploadResponse.data.url) {
+            updateData.avatar = uploadResponse.data.url;
+          } else {
+            throw new Error('Avatar upload failed');
+          }
+        } catch (uploadError: any) {
+          console.error('Error uploading avatar:', uploadError);
+          Alert.alert('Warning', 'Failed to upload avatar. Profile will be updated without avatar.');
+        }
+      } else if (avatarUri && avatarUri.startsWith('http')) {
+        // Already a URL, use it directly
         updateData.avatar = avatarUri;
       }
 
       // Call API to update profile
-      await api.put('/user/profile', updateData);
+      await api.put('/profile', updateData);
 
       // Refresh user data
       await refreshUser();
@@ -182,22 +272,124 @@ const EditProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>Registration Email</Text>
             <TextInput
-              style={[styles.input, errors.email && styles.inputError]}
-              value={formData.email}
+              style={[styles.input, errors.registrationEmail && styles.inputError]}
+              value={formData.registrationEmail}
               onChangeText={(text) => {
-                setFormData({ ...formData, email: text });
-                if (errors.email) {
-                  setErrors({ ...errors, email: '' });
+                setFormData({ ...formData, registrationEmail: text });
+                if (errors.registrationEmail) {
+                  setErrors({ ...errors, registrationEmail: '' });
                 }
               }}
-              placeholder="Enter email"
+              placeholder="Email for product registrations"
               placeholderTextColor={colors.text.placeholder}
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+            <Text style={styles.hintText}>
+              This email will be used for product registrations. If not set, your login email will be used.
+            </Text>
+            {errors.registrationEmail && <Text style={styles.errorText}>{errors.registrationEmail}</Text>}
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Phone Number</Text>
+            <TextInput
+              style={[styles.input, errors.phone && styles.inputError]}
+              value={formData.phone}
+              onChangeText={(text) => {
+                setFormData({ ...formData, phone: text });
+                if (errors.phone) {
+                  setErrors({ ...errors, phone: '' });
+                }
+              }}
+              placeholder="(555) 123-4567"
+              placeholderTextColor={colors.text.placeholder}
+              keyboardType="phone-pad"
+            />
+            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Street Address</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.address}
+              onChangeText={(text) => setFormData({ ...formData, address: text })}
+              placeholder="123 Main St"
+              placeholderTextColor={colors.text.placeholder}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Address Line 2 (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.addressLine2}
+              onChangeText={(text) => setFormData({ ...formData, addressLine2: text })}
+              placeholder="Apartment, suite, unit, etc."
+              placeholderTextColor={colors.text.placeholder}
+            />
+          </View>
+
+          <View style={styles.formRow}>
+            <View style={[styles.formGroup, { flex: 2 }]}>
+              <Text style={styles.label}>City</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.city}
+                onChangeText={(text) => setFormData({ ...formData, city: text })}
+                placeholder="City"
+                placeholderTextColor={colors.text.placeholder}
+              />
+            </View>
+            <View style={[styles.formGroup, { flex: 1, marginLeft: spacing.md }]}>
+              <Text style={styles.label}>State</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.state}
+                onChangeText={(text) => setFormData({ ...formData, state: text })}
+                placeholder="CA"
+                placeholderTextColor={colors.text.placeholder}
+              />
+            </View>
+            <View style={[styles.formGroup, { flex: 1, marginLeft: spacing.md }]}>
+              <Text style={styles.label}>ZIP</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.zipCode}
+                onChangeText={(text) => setFormData({ ...formData, zipCode: text })}
+                placeholder="90210"
+                placeholderTextColor={colors.text.placeholder}
+                keyboardType="number-pad"
+              />
+            </View>
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Date of Birth (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.dateOfBirth}
+              onChangeText={(text) => setFormData({ ...formData, dateOfBirth: text })}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.text.placeholder}
+            />
+            <Text style={styles.hintText}>
+              Some registration forms require date of birth
+            </Text>
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Company Name (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.companyName}
+              onChangeText={(text) => setFormData({ ...formData, companyName: text })}
+              placeholder="For business registrations"
+              placeholderTextColor={colors.text.placeholder}
+            />
           </View>
 
           <TouchableOpacity
@@ -339,6 +531,15 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.white,
     marginLeft: spacing.sm,
+  },
+  formRow: {
+    flexDirection: 'row',
+    marginBottom: spacing.xl,
+  },
+  hintText: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
   },
 });
 

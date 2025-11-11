@@ -101,12 +101,20 @@ const requestInterceptor = async (
   // Build full URL
   const fullUrl = buildUrl(url);
 
+  // Check if body is FormData - don't set Content-Type for FormData (browser will set it with boundary)
+  const isFormData = options.body instanceof FormData;
+  
   // Merge headers
   const headers: Record<string, string> = {
-    ...API_CONFIG_DEFAULTS.HEADERS,
+    ...(isFormData ? {} : API_CONFIG_DEFAULTS.HEADERS), // Don't set Content-Type for FormData
     ...config?.headers,
     ...((options.headers as Record<string, string>) || {}),
   };
+  
+  // Remove Content-Type if FormData (let browser set it)
+  if (isFormData && headers['Content-Type']) {
+    delete headers['Content-Type'];
+  }
 
   // Add Authorization header if not skipped
   if (!config?.skipAuth) {
@@ -275,6 +283,11 @@ async function fetchWithConfig<T>(
           throw new ApiError(API_ERROR_MESSAGES.TIMEOUT_ERROR, 0);
         }
 
+        // Handle network errors (connection refused, no internet, etc.)
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          throw new ApiError(API_ERROR_MESSAGES.NETWORK_ERROR, 0);
+        }
+
         throw error;
       }
 
@@ -283,9 +296,11 @@ async function fetchWithConfig<T>(
 
       // Don't retry on auth errors or client errors (4xx)
       if (error instanceof ApiError) {
+        // Don't retry on auth errors, client errors, or network errors (status 0)
         if (
           error.status === HTTP_STATUS.UNAUTHORIZED ||
           error.status === HTTP_STATUS.FORBIDDEN ||
+          error.status === 0 || // Network/timeout errors
           (error.status >= 400 && error.status < 500)
         ) {
           throw error;
@@ -336,15 +351,18 @@ export const api = {
   /**
    * POST request
    */
-  post: <T>(url: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> =>
-    fetchWithConfig<T>(
+  post: <T>(url: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> => {
+    // Check if data is FormData - don't stringify it
+    const isFormData = data instanceof FormData;
+    return fetchWithConfig<T>(
       url,
       {
         method: 'POST',
-        body: data ? JSON.stringify(data) : undefined,
+        body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
       },
       config
-    ),
+    );
+  },
 
   /**
    * PUT request

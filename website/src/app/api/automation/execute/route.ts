@@ -111,11 +111,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Prepare registration data
+    // Use login email for registration
+    const emailForRegistration = user.email;
+    
     const registrationData: RegistrationData = {
-      // User info
+      // User info - use profile data
       firstName: user.firstName,
       lastName: user.lastName,
-      email: user.email,
+      email: emailForRegistration, // Use registration email for product registrations
       phone: user.phone || undefined,
 
       // Address

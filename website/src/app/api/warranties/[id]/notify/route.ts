@@ -1,10 +1,8 @@
 // POST /api/warranties/[id]/notify - Manually trigger warranty notification
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { getSession } from '@/lib/auth';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

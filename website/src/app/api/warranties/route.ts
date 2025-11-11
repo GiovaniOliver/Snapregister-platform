@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
 import { WarrantyStatus } from '@/types/warranty';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {

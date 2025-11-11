@@ -23,9 +23,15 @@ export default function SettingsPage() {
     email: '',
     phone: '',
     address: '',
+    addressLine2: '',
     city: '',
     state: '',
     zipCode: '',
+    country: 'US',
+    dateOfBirth: '',
+    companyName: '',
+    alternatePhone: '',
+    preferredContact: 'EMAIL' as 'EMAIL' | 'PHONE' | 'SMS',
   });
 
   const [notifications, setNotifications] = useState({
@@ -36,21 +42,34 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    // Fetch user session
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) {
-          setUser(data.user);
+    // Fetch user profile
+    Promise.all([
+      fetch('/api/auth/session').then(res => res.json()),
+      fetch('/api/profile').then(res => res.json())
+    ])
+      .then(([sessionData, profileData]) => {
+        if (sessionData.user) {
+          setUser(sessionData.user);
+          
+          // Use profile data if available, otherwise fall back to session data
+          const profileInfo = profileData.profile || sessionData.user;
           setProfile({
-            firstName: data.user.firstName || '',
-            lastName: data.user.lastName || '',
-            email: data.user.email || '',
-            phone: data.user.phone || '',
-            address: data.user.address || '',
-            city: data.user.city || '',
-            state: data.user.state || '',
-            zipCode: data.user.zipCode || '',
+            firstName: profileInfo.firstName || '',
+            lastName: profileInfo.lastName || '',
+            email: sessionData.user.email || '',
+            phone: profileInfo.phone || '',
+            address: profileInfo.address || '',
+            addressLine2: profileInfo.addressLine2 || '',
+            city: profileInfo.city || '',
+            state: profileInfo.state || '',
+            zipCode: profileInfo.zipCode || '',
+            country: profileInfo.country || 'US',
+            dateOfBirth: profileInfo.dateOfBirth 
+              ? new Date(profileInfo.dateOfBirth).toISOString().split('T')[0]
+              : '',
+            companyName: profileInfo.companyName || '',
+            alternatePhone: profileInfo.alternatePhone || '',
+            preferredContact: profileInfo.preferredContact || 'EMAIL',
           });
         } else {
           router.push('/login');
@@ -65,24 +84,37 @@ export default function SettingsPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await fetch('/api/user/profile', {
+      const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profile),
       });
+
+      const data = await response.json();
 
       if (response.ok) {
         toast({
           title: 'Success',
           description: 'Your profile has been updated successfully.',
         });
+        // Update local state with response
+        if (data.profile) {
+          setProfile(prev => ({
+            ...prev,
+            ...data.profile,
+            email: prev.email, // Keep login email
+            dateOfBirth: data.profile.dateOfBirth 
+              ? new Date(data.profile.dateOfBirth).toISOString().split('T')[0]
+              : '',
+          }));
+        }
       } else {
-        throw new Error('Failed to update profile');
+        throw new Error(data.error || 'Failed to update profile');
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to update profile. Please try again.',
+        description: error.message || 'Failed to update profile. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -156,38 +188,32 @@ export default function SettingsPage() {
               <CardTitle>Profile Information</CardTitle>
             </div>
             <CardDescription>
-              Update your personal information and contact details
+              Update your personal information used for product registration forms. This information will be automatically filled when registering products.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleProfileUpdate} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName">First Name *</Label>
                   <Input
                     id="firstName"
                     value={profile.firstName}
                     onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                    required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName">Last Name *</Label>
                   <Input
                     id="lastName"
                     value={profile.lastName}
                     onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                    required
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                />
-              </div>
+
               <div>
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
@@ -198,8 +224,20 @@ export default function SettingsPage() {
                   placeholder="(555) 123-4567"
                 />
               </div>
+
               <div>
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="alternatePhone">Alternate Phone (Optional)</Label>
+                <Input
+                  id="alternatePhone"
+                  type="tel"
+                  value={profile.alternatePhone}
+                  onChange={(e) => setProfile({ ...profile, alternatePhone: e.target.value })}
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="address">Street Address</Label>
                 <Input
                   id="address"
                   value={profile.address}
@@ -207,7 +245,18 @@ export default function SettingsPage() {
                   placeholder="123 Main St"
                 />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+              <div>
+                <Label htmlFor="addressLine2">Address Line 2 (Optional)</Label>
+                <Input
+                  id="addressLine2"
+                  value={profile.addressLine2}
+                  onChange={(e) => setProfile({ ...profile, addressLine2: e.target.value })}
+                  placeholder="Apartment, suite, unit, etc."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <Label htmlFor="city">City</Label>
                   <Input
@@ -234,9 +283,57 @@ export default function SettingsPage() {
                     placeholder="90210"
                   />
                 </div>
+                <div>
+                  <Label htmlFor="country">Country</Label>
+                  <Input
+                    id="country"
+                    value={profile.country}
+                    onChange={(e) => setProfile({ ...profile, country: e.target.value })}
+                    placeholder="US"
+                  />
+                </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="dateOfBirth">Date of Birth (Optional)</Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    value={profile.dateOfBirth}
+                    onChange={(e) => setProfile({ ...profile, dateOfBirth: e.target.value })}
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Some registration forms require date of birth
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="companyName">Company Name (Optional)</Label>
+                  <Input
+                    id="companyName"
+                    value={profile.companyName}
+                    onChange={(e) => setProfile({ ...profile, companyName: e.target.value })}
+                    placeholder="For business registrations"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="preferredContact">Preferred Contact Method</Label>
+                <select
+                  id="preferredContact"
+                  value={profile.preferredContact}
+                  onChange={(e) => setProfile({ ...profile, preferredContact: e.target.value as 'EMAIL' | 'PHONE' | 'SMS' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="EMAIL">Email</option>
+                  <option value="PHONE">Phone</option>
+                  <option value="SMS">SMS</option>
+                </select>
+              </div>
+
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save Changes'}
+                {isLoading ? 'Saving...' : 'Save Profile'}
               </Button>
             </form>
           </CardContent>

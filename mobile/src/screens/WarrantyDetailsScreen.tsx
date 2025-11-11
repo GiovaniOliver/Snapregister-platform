@@ -10,6 +10,7 @@ import {
   Linking,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList, Warranty } from '../types';
 import { warrantyService } from '../services/warrantyService';
@@ -18,6 +19,7 @@ import { colors } from '../constants/theme';
 type Props = NativeStackScreenProps<RootStackParamList, 'WarrantyDetails'>;
 
 const WarrantyDetailsScreen: React.FC<Props> = ({ route }) => {
+  const navigation = useNavigation();
   const { warrantyId } = route.params;
   const [warranty, setWarranty] = useState<Warranty | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,6 +61,16 @@ const WarrantyDetailsScreen: React.FC<Props> = ({ route }) => {
         }
         break;
     }
+  };
+
+  const handleViewDocument = () => {
+    if (warranty?.documentUrl) {
+      Linking.openURL(warranty.documentUrl);
+    }
+  };
+
+  const handleEditWarranty = () => {
+    navigation.navigate('AddWarranty' as any, { warrantyId: warrantyId, productId: warranty?.productId });
   };
 
   const calculateDaysRemaining = () => {
@@ -205,7 +217,7 @@ const WarrantyDetailsScreen: React.FC<Props> = ({ route }) => {
 
       {warranty.documentUrl && (
         <View style={styles.section}>
-          <TouchableOpacity style={styles.documentButton}>
+          <TouchableOpacity style={styles.documentButton} onPress={handleViewDocument}>
             <Ionicons name="document-text" size={24} color={colors.primary} />
             <Text style={styles.documentButtonText}>View Warranty Document</Text>
           </TouchableOpacity>
@@ -213,7 +225,7 @@ const WarrantyDetailsScreen: React.FC<Props> = ({ route }) => {
       )}
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.editButton}>
+        <TouchableOpacity style={styles.editButton} onPress={handleEditWarranty}>
           <Ionicons name="create-outline" size={20} color={colors.white} />
           <Text style={styles.editButtonText}>Edit Warranty</Text>
         </TouchableOpacity>

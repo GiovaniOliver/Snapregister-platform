@@ -82,8 +82,9 @@ export default function LoginPage() {
           title: 'Success',
           description: 'You have been logged in successfully.',
         });
-        router.push('/dashboard');
-        router.refresh();
+        // Use window.location for hard redirect to ensure cookie is set and middleware can verify
+        // This prevents race conditions with router.push + router.refresh
+        window.location.href = '/dashboard';
       } else {
         // SECURITY: Use generic error message from API or fallback
         // Prevents information disclosure about user existence

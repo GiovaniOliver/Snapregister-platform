@@ -6,7 +6,7 @@
 
 import * as SecureStore from 'expo-secure-store';
 import { api, uploadFile, clearSession } from '../services/api';
-import { API_URL } from '../config/env';
+import { API_URL } from '../config/api';
 
 // Mock dependencies
 jest.mock('expo-secure-store');

@@ -1,6 +1,6 @@
 // Warranty Background Worker - Handles warranty expiration checks and notifications
 
-import { Queue, Worker, QueueScheduler } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import {
   updateWarrantyStatuses,
@@ -39,15 +39,8 @@ export const warrantyStatusQueue = new Queue('warranty-status-updates', {
   },
 });
 
-// Queue Schedulers
-const warrantyNotificationScheduler = new QueueScheduler(
-  'warranty-notifications',
-  { connection }
-);
-
-const warrantyStatusScheduler = new QueueScheduler('warranty-status-updates', {
-  connection,
-});
+// Note: QueueScheduler is no longer needed in BullMQ v4+
+// Delayed jobs are now handled automatically by the Queue
 
 // Job Processors
 

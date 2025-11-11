@@ -2,10 +2,8 @@
 // GET /api/registration/export?id={registrationId}&format={json|xml|csv}
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 // import { exportDataPackage } from '@/lib/data-package-generator';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {

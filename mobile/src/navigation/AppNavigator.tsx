@@ -8,6 +8,7 @@ import { ActivityIndicator, View, StyleSheet } from 'react-native';
 // Import screens
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ScanScreen from '../screens/ScanScreen';
 import ProductsScreen from '../screens/ProductsScreen';
@@ -16,6 +17,8 @@ import CameraCaptureScreen from '../screens/CameraCaptureScreen';
 import MultiImageCaptureScreen from '../screens/MultiImageCaptureScreen';
 import ProductDetailsScreen from '../screens/ProductDetailsScreen';
 import WarrantyDetailsScreen from '../screens/WarrantyDetailsScreen';
+import EditProductScreen from '../screens/EditProductScreen';
+import AddWarrantyScreen from '../screens/AddWarrantyScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -39,6 +42,7 @@ const AuthNavigator = () => {
     >
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Signup" component={SignupScreen} />
+      <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </AuthStack.Navigator>
   );
 };
@@ -160,6 +164,16 @@ const AppNavigator = () => {
               name="WarrantyDetails"
               component={WarrantyDetailsScreen}
               options={{ title: 'Warranty Details' }}
+            />
+            <Stack.Screen
+              name="EditProduct"
+              component={EditProductScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="AddWarranty"
+              component={AddWarrantyScreen}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="EditProfile"

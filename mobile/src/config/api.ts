@@ -17,15 +17,20 @@ const getPlatformApiUrl = (baseUrl: string): string => {
   if (Platform.OS === 'android' && baseUrl.includes('localhost')) {
     return baseUrl.replace('localhost', '10.0.2.2');
   }
+  // iOS simulator and physical devices: localhost might not work
+  // Use environment variable EXPO_PUBLIC_API_URL with your machine's IP address
+  // Example: EXPO_PUBLIC_API_URL=http://192.168.1.100:3004
   return baseUrl;
 };
 
 // Environment-specific base URLs
-const DEFAULT_DEV_BASE_URL = 'http://localhost:3000';
+// Default port 3004 matches website's dev:mobile script
+const DEFAULT_DEV_BASE_URL = 'http://localhost:3004';
 
 const API_CONFIG = {
   dev: {
     baseUrl: getPlatformApiUrl(
+      Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL ||
       process.env.EXPO_PUBLIC_API_URL ||
       process.env.API_URL ||
       DEFAULT_DEV_BASE_URL

@@ -56,7 +56,9 @@
       "eas": {
         "projectId": "your-project-id-here"
       },
-      "environment": "dev"
+      "environment": "dev",
+      "EXPO_PUBLIC_API_URL": "http://192.168.1.15:3004",
+      "WEB_URL": "http://192.168.1.15:3004"
     }
   }
 }

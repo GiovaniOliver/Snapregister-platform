@@ -1,57 +1,39 @@
-// Product Registration SaaS - Database Schema
-// SQLite for MVP, PostgreSQL for production
-
-datasource db {
-  provider = "postgresql"
-  url      ="prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza19NTGNYWERKQndrT1ZNbXZteG85R0ciLCJhcGlfa2V5IjoiMDFLOVFDVjBBWTNZM0NFNUg2QTczMlhCWEMiLCJ0ZW5hbnRfaWQiOiI4ZGViMmJkN2Y5Y2Q2ZGJlODcwZjcwYjkyYjZkZWFlMGIzOWU1NDU4NGRjY2RjNGI2OTYzNWRhMjhkZTk4ZDg3IiwiaW50ZXJuYWxfc2VjcmV0IjoiMjAzOTUzZWEtYzczMi00YTk5LWE3MjktOTIwODIyMmUxOTczIn0.54apvyvF239Nhzmz6iqm1XDuEl9TIHfGVUq5-bCQ04Q"
-
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// ============================================================================
-// USER & AUTHENTICATION
-// ============================================================================
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified DateTime?
-  passwordHash  String? // Null for OAuth users
-
-  // Profile Information
-  firstName String
-  lastName  String
-  phone     String?
-  address   String?
-  city      String?
-  state     String?
-  zipCode   String?
-  country   String  @default("US")
-
-  // Settings
-  notificationsEnabled Boolean @default(true)
-  autoRegister         Boolean @default(true)
-
-  // Subscription
-  plan                 String    @default("FREE") // Values: FREE, PREMIUM, FAMILY, BUSINESS
+  id                   String             @id @default(cuid())
+  email                String             @unique
+  emailVerified        DateTime?
+  passwordHash         String?
+  firstName            String
+  lastName             String
+  phone                String?
+  address              String?
+  city                 String?
+  state                String?
+  zipCode              String?
+  country              String             @default("US")
+  notificationsEnabled Boolean            @default(true)
+  autoRegister         Boolean            @default(true)
+  plan                 String             @default("FREE")
   stripeCustomerId     String?
   stripeSubscriptionId String?
   planExpiresAt        DateTime?
-
-  // Timestamps
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  lastLoginAt DateTime?
-
-  // Relations
-  products          Product[]
-  registrations     Registration[]
-  sessions          Session[]
-  apiKeys           ApiKey[]
-  warrantyContracts WarrantyContract[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  lastLoginAt          DateTime?
+  apiKeys              ApiKey[]
+  products             Product[]
+  registrations        Registration[]
+  sessions             Session[]
+  warrantyContracts    WarrantyContract[]
 
   @@index([email])
 }
@@ -62,8 +44,7 @@ model Session {
   sessionToken String   @unique
   expiresAt    DateTime
   createdAt    DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -76,62 +57,41 @@ model ApiKey {
   lastUsedAt DateTime?
   expiresAt  DateTime?
   createdAt  DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([key])
 }
 
-// ============================================================================
-// PRODUCTS
-// ============================================================================
-
 model Product {
-  id     String @id @default(cuid())
-  userId String
-
-  // Basic Info (extracted from images)
-  productName      String
-  manufacturerName String // Extracted manufacturer name from OCR
-  manufacturerId   String? // FK to Manufacturer table
-  category         String? // Values: APPLIANCE, ELECTRONICS, AUTOMOTIVE, TOOL, FURNITURE, OUTDOOR, SPORTING_GOODS, HOME_GARDEN, OTHER
-
-  // Identifiers
-  modelNumber  String?
-  serialNumber String? // Encrypted
-  sku          String?
-  upc          String?
-
-  // Purchase Info
-  purchaseDate  DateTime?
-  purchasePrice Float?
-  retailer      String?
-
-  // Warranty Info
-  warrantyDuration   Int? // in months
+  id                 String            @id @default(cuid())
+  userId             String
+  productName        String
+  manufacturerName   String
+  manufacturerId     String?
+  category           String?
+  modelNumber        String?
+  serialNumber       String?
+  sku                String?
+  upc                String?
+  purchaseDate       DateTime?
+  purchasePrice      Float?
+  retailer           String?
+  warrantyDuration   Int?
   warrantyStartDate  DateTime?
   warrantyExpiry     DateTime?
-  warrantyType       String? // "Limited", "Extended", "Lifetime"
-  warrantyContractId String?   @unique
-
-  // AI Extraction Data
-  imageUrls       String // JSON array
-  extractedData   String // JSON blob with raw OCR data
-  confidenceScore Float? // 0-1
-
-  // Status
-  status String @default("PROCESSING") // Values: PROCESSING, NEEDS_REVIEW, READY, REGISTERED, REGISTRATION_FAILED, MANUAL_REQUIRED
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  manufacturer     Manufacturer?     @relation(fields: [manufacturerId], references: [id])
-  registrations    Registration[]
-  documents        ProductDocument[]
-  warrantyContract WarrantyContract? @relation(fields: [warrantyContractId], references: [id])
+  warrantyType       String?
+  warrantyContractId String?           @unique
+  imageUrls          String
+  extractedData      String
+  confidenceScore    Float?
+  status             String            @default("PROCESSING")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  manufacturer       Manufacturer?     @relation(fields: [manufacturerId], references: [id])
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  warrantyContract   WarrantyContract? @relation(fields: [warrantyContractId], references: [id])
+  documents          ProductDocument[]
+  registrations      Registration[]
 
   @@index([userId])
   @@index([manufacturerId])
@@ -140,114 +100,78 @@ model Product {
 }
 
 model ProductDocument {
-  id        String @id @default(cuid())
-  productId String
-
-  type     String // Values: SERIAL_NUMBER_PHOTO, WARRANTY_CARD, RECEIPT, PRODUCT_PHOTO, USER_MANUAL, PACKAGING, OTHER
-  fileUrl  String
-  fileName String
-  fileSize Int
-  mimeType String
-
-  // OCR Data
+  id            String   @id @default(cuid())
+  productId     String
+  type          String
+  fileUrl       String
+  fileName      String
+  fileSize      Int
+  mimeType      String
   ocrText       String?
   ocrConfidence Float?
-
-  createdAt DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
 }
 
-// ============================================================================
-// MANUFACTURERS
-// ============================================================================
-
 model Manufacturer {
-  id             String  @id @default(cuid())
-  name           String  @unique
-  normalizedName String  @unique // lowercase, no spaces
-  website        String?
-  supportEmail   String?
-  supportPhone   String?
-
-  // Registration Info
-  registrationUrl String?
-  hasApi          Boolean @default(false)
-  apiEndpoint     String?
-  apiDocs         String?
-
-  // Automation
-  automationAvailable Boolean   @default(false)
-  automationScript    String? // JSON
-  scriptVersion       Int       @default(1)
+  id                  String                     @id @default(cuid())
+  name                String                     @unique
+  normalizedName      String                     @unique
+  website             String?
+  supportEmail        String?
+  supportPhone        String?
+  registrationUrl     String?
+  hasApi              Boolean                    @default(false)
+  apiEndpoint         String?
+  apiDocs             String?
+  automationAvailable Boolean                    @default(false)
+  automationScript    String?
+  scriptVersion       Int                        @default(1)
   lastTestedAt        DateTime?
-  successRate         Float     @default(0) // 0-1
-
-  // Metadata
-  logo     String?
-  category String? // Values: APPLIANCE, ELECTRONICS, AUTOMOTIVE, TOOL, FURNITURE, OUTDOOR, SPORTING_GOODS, HOME_GARDEN, OTHER
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  products      Product[]
-  registrations Registration[]
-  formTemplates ManufacturerFormTemplate[]
+  successRate         Float                      @default(0)
+  logo                String?
+  category            String?
+  isActive            Boolean                    @default(true)
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  formTemplates       ManufacturerFormTemplate[]
+  products            Product[]
+  registrations       Registration[]
 
   @@index([normalizedName])
   @@index([successRate])
 }
 
-// ============================================================================
-// REGISTRATIONS
-// ============================================================================
-
 model Registration {
-  id             String  @id @default(cuid())
-  productId      String
-  userId         String
-  manufacturerId String?
-
-  // Registration Details
-  registrationMethod String // Values: API, AUTOMATION_RELIABLE, AUTOMATION_EXPERIMENTAL, ASSISTED_MANUAL, FULL_MANUAL
+  id                 String                @id @default(cuid())
+  productId          String
+  userId             String
+  manufacturerId     String?
+  registrationMethod String
   manufacturerUrl    String?
   confirmationCode   String?
   confirmationEmail  String?
-
-  // Status
-  status        String  @default("PENDING") // Values: PENDING, PROCESSING, SUCCESS, PARTIAL_SUCCESS, FAILED, MANUAL_REQUIRED, USER_COMPLETED, VERIFICATION_NEEDED
-  statusMessage String?
-
-  // Automation Details
-  automationAttempts Int       @default(0)
+  status             String                @default("PENDING")
+  statusMessage      String?
+  automationAttempts Int                   @default(0)
   lastAttemptAt      DateTime?
-  automationScript   String? // JSON snapshot of script used
+  automationScript   String?
   scriptVersion      Int?
-
-  // Error Handling
-  errorMessage    String?
-  errorScreenshot String? // S3 URL
-  errorLog        String? // Full error details
-
-  // Manual Completion
-  assistedPdfUrl  String? // Pre-filled PDF
-  emailDraftSent  Boolean   @default(false)
-  userCompletedAt DateTime?
-
-  // Timestamps
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  completedAt DateTime?
-
-  // Relations
-  product      Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  manufacturer Manufacturer?         @relation(fields: [manufacturerId], references: [id])
-  attempts     RegistrationAttempt[]
+  errorMessage       String?
+  errorScreenshot    String?
+  errorLog           String?
+  assistedPdfUrl     String?
+  emailDraftSent     Boolean               @default(false)
+  userCompletedAt    DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  completedAt        DateTime?
+  manufacturer       Manufacturer?         @relation(fields: [manufacturerId], references: [id])
+  product            Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts           RegistrationAttempt[]
 
   @@index([userId])
   @@index([productId])
@@ -256,99 +180,70 @@ model Registration {
 }
 
 model RegistrationAttempt {
-  id             String @id @default(cuid())
+  id             String       @id @default(cuid())
   registrationId String
   attemptNumber  Int
-
-  // Attempt Details
-  method        String // Values: API, AUTOMATION_RELIABLE, AUTOMATION_EXPERIMENTAL, ASSISTED_MANUAL, FULL_MANUAL
-  scriptVersion Int?
-  startedAt     DateTime  @default(now())
-  completedAt   DateTime?
-
-  // Result
-  success      Boolean
-  errorMessage String?
-  errorType    String? // "timeout", "captcha", "form_changed", etc.
-  screenshot   String? // S3 URL
-  htmlSnapshot String? // For debugging
-
-  // Performance
-  durationMs Int?
-
-  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  method         String
+  scriptVersion  Int?
+  startedAt      DateTime     @default(now())
+  completedAt    DateTime?
+  success        Boolean
+  errorMessage   String?
+  errorType      String?
+  screenshot     String?
+  htmlSnapshot   String?
+  durationMs     Int?
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
 
   @@index([registrationId])
   @@index([success])
 }
 
-// ============================================================================
-// NOTIFICATIONS & EMAILS
-// ============================================================================
-
 model Notification {
-  id     String @id @default(cuid())
-  userId String
-
-  type      String // Values: REGISTRATION_SUCCESS, REGISTRATION_FAILED, MANUAL_ACTION_REQUIRED, WARRANTY_EXPIRING, WARRANTY_EXPIRED, RECALL_NOTICE, SYSTEM_UPDATE
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
   title     String
   message   String
   actionUrl String?
-
-  read   Boolean   @default(false)
-  readAt DateTime?
-
-  createdAt DateTime @default(now())
+  read      Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
 
   @@index([userId, read])
   @@index([createdAt])
 }
 
 model EmailLog {
-  id     String  @id @default(cuid())
-  userId String?
-
-  type      String // Values: WELCOME, VERIFICATION, REGISTRATION_SUCCESS, REGISTRATION_MANUAL, WARRANTY_REMINDER, PASSWORD_RESET
-  recipient String
-  subject   String
-
+  id          String    @id @default(cuid())
+  userId      String?
+  type        String
+  recipient   String
+  subject     String
   sent        Boolean   @default(false)
   sentAt      DateTime?
   deliveredAt DateTime?
   openedAt    DateTime?
   clickedAt   DateTime?
-
-  error     String?
-  messageId String? // Provider message ID
-
-  createdAt DateTime @default(now())
+  error       String?
+  messageId   String?
+  createdAt   DateTime  @default(now())
 
   @@index([recipient])
   @@index([createdAt])
 }
 
-// ============================================================================
-// ANALYTICS & MONITORING
-// ============================================================================
-
 model AiExtractionMetric {
-  id        String  @id @default(cuid())
-  productId String?
-
-  // Extraction Details
-  model        String // "claude-3-5-sonnet", "gpt-4-vision", etc.
-  documentType String // Values: SERIAL_NUMBER_PHOTO, WARRANTY_CARD, RECEIPT, PRODUCT_PHOTO, USER_MANUAL, PACKAGING, OTHER
-
-  // Performance
-  latencyMs  Int
-  tokenCount Int?
-  cost       Float?
-
-  // Quality
+  id                  String   @id @default(cuid())
+  productId           String?
+  model               String
+  documentType        String
+  latencyMs           Int
+  tokenCount          Int?
+  cost                Float?
   confidenceScore     Float?
-  manualEditsRequired Boolean @default(false)
-
-  createdAt DateTime @default(now())
+  manualEditsRequired Boolean  @default(false)
+  createdAt           DateTime @default(now())
 
   @@index([model])
   @@index([documentType])
@@ -356,190 +251,122 @@ model AiExtractionMetric {
 }
 
 model SystemHealth {
-  id String @id @default(cuid())
-
-  // Service Status
+  id                  String   @id @default(cuid())
   ocrServiceUp        Boolean
   automationServiceUp Boolean
   emailServiceUp      Boolean
   databaseUp          Boolean
-
-  // Queue Status
-  queueLength       Int
-  queueOldestJobAge Int? // in seconds
-
-  // Performance
-  avgRegistrationTime Int? // in seconds
-  successRate24h      Float? // 0-1
-  errorRate24h        Float? // 0-1
-
-  // Resources
-  cpuUsage    Float?
-  memoryUsage Float?
-  diskUsage   Float?
-
-  timestamp DateTime @default(now())
+  queueLength         Int
+  queueOldestJobAge   Int?
+  avgRegistrationTime Int?
+  successRate24h      Float?
+  errorRate24h        Float?
+  cpuUsage            Float?
+  memoryUsage         Float?
+  diskUsage           Float?
+  timestamp           DateTime @default(now())
 
   @@index([timestamp])
 }
 
-// ============================================================================
-// SUPPORT & FEEDBACK
-// ============================================================================
-
 model SupportTicket {
-  id     String  @id @default(cuid())
-  userId String?
-
+  id          String    @id @default(cuid())
+  userId      String?
   subject     String
   description String
-  status      String @default("OPEN") // Values: OPEN, IN_PROGRESS, WAITING_FOR_USER, RESOLVED, CLOSED
-  priority    String @default("NORMAL") // Values: LOW, NORMAL, HIGH, URGENT
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  closedAt  DateTime?
+  status      String    @default("OPEN")
+  priority    String    @default("NORMAL")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  closedAt    DateTime?
 
   @@index([status])
   @@index([createdAt])
 }
 
 model UserFeedback {
-  id     String  @id @default(cuid())
-  userId String?
-
-  type    String // Values: GENERAL, OCR_ACCURACY, AUTOMATION_SUCCESS, UI_UX, FEATURE_REQUEST, BUG_REPORT
-  rating  Int? // 1-5
-  comment String?
-  context String? // JSON with product, registration details
-
+  id        String   @id @default(cuid())
+  userId    String?
+  type      String
+  rating    Int?
+  comment   String?
+  context   String?
   createdAt DateTime @default(now())
 
   @@index([type])
   @@index([rating])
 }
 
-// ============================================================================
-// WARRANTY CONTRACT ANALYSIS
-// ============================================================================
-
 model WarrantyContract {
-  id        String  @id @default(cuid())
-  userId    String
-  productId String? @unique
-
-  // Document Information
-  documentUrl  String
-  documentType String // "pdf", "image/png", "image/jpeg"
-  fileName     String
-  fileSize     Int
-
-  // Extracted Text
-  contractText  String // Full extracted text from OCR/PDF
-  ocrConfidence Float? // Overall OCR confidence (0-1)
-
-  // AI Analysis Results
-  aiSummary       String? // Plain language summary
-  confidenceScore Float? // AI confidence in extraction (0-1)
-
-  // Warranty Details (extracted by AI)
-  duration       String? // "12 months", "2 years", "lifetime"
-  durationMonths Int? // Normalized duration in months
-  startDate      DateTime?
-  expiryDate     DateTime?
-
-  // Coverage Information (JSON arrays)
-  coverageItems String @default("[]") // What's covered
-  exclusions    String @default("[]") // What's NOT covered
-  limitations   String @default("[]") // Conditions and limitations
-
-  // Claim Information
-  claimProcedure String? // How to file claims
-  claimContacts  String  @default("{}") // JSON: {phone, email, website}
-  requiredDocs   String  @default("[]") // Documents needed for claims
-
-  // Important Dates (JSON)
-  criticalDates String @default("[]") // Deadlines, registration dates, etc.
-
-  // Additional Terms
-  transferable    Boolean? // Can warranty be transferred
-  extendedOptions String? // Extended warranty information
-
-  // Analysis Metadata
-  aiModel       String    @default("claude-3-5-sonnet-20241022")
-  promptVersion String    @default("1.0")
-  analysisDate  DateTime  @default(now())
-  reanalyzedAt  DateTime?
-
-  // Processing Status
-  status       String  @default("PROCESSING") // Values: PROCESSING, COMPLETED, NEEDS_REVIEW, FAILED, REANALYZING
-  errorMessage String?
-
-  // Highlights (JSON) - categorized important info
-  criticalHighlights String @default("[]")
-  warningHighlights  String @default("[]")
-  infoHighlights     String @default("[]")
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product?
+  id                 String    @id @default(cuid())
+  userId             String
+  productId          String?   @unique
+  documentUrl        String
+  documentType       String
+  fileName           String
+  fileSize           Int
+  contractText       String
+  ocrConfidence      Float?
+  aiSummary          String?
+  confidenceScore    Float?
+  duration           String?
+  durationMonths     Int?
+  startDate          DateTime?
+  expiryDate         DateTime?
+  coverageItems      String    @default("[]")
+  exclusions         String    @default("[]")
+  limitations        String    @default("[]")
+  claimProcedure     String?
+  claimContacts      String    @default("{}")
+  requiredDocs       String    @default("[]")
+  criticalDates      String    @default("[]")
+  transferable       Boolean?
+  extendedOptions    String?
+  aiModel            String    @default("claude-3-5-sonnet-20241022")
+  promptVersion      String    @default("1.0")
+  analysisDate       DateTime  @default(now())
+  reanalyzedAt       DateTime?
+  status             String    @default("PROCESSING")
+  errorMessage       String?
+  criticalHighlights String    @default("[]")
+  warningHighlights  String    @default("[]")
+  infoHighlights     String    @default("[]")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  product            Product?
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
   @@index([expiryDate])
 }
 
-// ============================================================================
-// MANUFACTURER FORM TEMPLATES
-// ============================================================================
-
 model ManufacturerFormTemplate {
-  id             String @id @default(cuid())
-  manufacturerId String
-
-  // Template Information
-  formName String // "Standard Warranty Registration", "Online Registration"
-  formUrl  String // URL to the manufacturer's registration form
-  formType String @default("WEB_FORM") // Values: WEB_FORM, PDF_FORM, EMAIL_REQUIRED, PHONE_REQUIRED, MAIL_REQUIRED, API_AVAILABLE
-
-  // Visual Guide
-  screenshotUrl String? // Screenshot of the registration form
-  videoUrl      String? // Video walkthrough URL
-
-  // Field Mapping (JSON)
-  fieldMappings String // JSON: {ourField: "their_field_name", ...}
-
-  // Step-by-Step Instructions (JSON array)
-  instructions String // JSON: [{step: 1, title: "...", description: "...", imageUrl: "..."}]
-
-  // Metadata
-  lastVerified    DateTime?
-  verifiedWorking Boolean   @default(true)
-  difficulty      String    @default("EASY") // Values: EASY, MEDIUM, HARD, EXPERT
-  estimatedTime   Int       @default(5) // in minutes
-  requiresCaptcha Boolean   @default(false)
-  requiresAccount Boolean   @default(false)
-
-  // Usage Statistics
-  timesUsed         Int  @default(0)
-  successCount      Int  @default(0)
-  failureCount      Int  @default(0)
-  avgCompletionTime Int? // in seconds
-
-  // Template Status
-  isActive Boolean @default(true)
-  notes    String? // Admin notes about this template
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  manufacturer Manufacturer     @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
-  submissions  FormSubmission[]
+  id                String           @id @default(cuid())
+  manufacturerId    String
+  formName          String
+  formUrl           String
+  formType          String           @default("WEB_FORM")
+  screenshotUrl     String?
+  videoUrl          String?
+  fieldMappings     String
+  instructions      String
+  lastVerified      DateTime?
+  verifiedWorking   Boolean          @default(true)
+  difficulty        String           @default("EASY")
+  estimatedTime     Int              @default(5)
+  requiresCaptcha   Boolean          @default(false)
+  requiresAccount   Boolean          @default(false)
+  timesUsed         Int              @default(0)
+  successCount      Int              @default(0)
+  failureCount      Int              @default(0)
+  avgCompletionTime Int?
+  isActive          Boolean          @default(true)
+  notes             String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  submissions       FormSubmission[]
+  manufacturer      Manufacturer     @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
 
   @@index([manufacturerId])
   @@index([isActive])
@@ -547,32 +374,22 @@ model ManufacturerFormTemplate {
 }
 
 model FormSubmission {
-  id             String @id @default(cuid())
-  registrationId String
-  templateId     String
-  userId         String
-
-  // Submission Details
-  status      String    @default("IN_PROGRESS") // Values: IN_PROGRESS, COMPLETED, ABANDONED, FAILED
-  startedAt   DateTime  @default(now())
-  completedAt DateTime?
-
-  // Tracking
-  currentStep  Int    @default(1)
-  totalSteps   Int
-  copiedFields String @default("[]") // JSON array of field names copied
-
-  // User Feedback
+  id               String                   @id @default(cuid())
+  registrationId   String
+  templateId       String
+  userId           String
+  status           String                   @default("IN_PROGRESS")
+  startedAt        DateTime                 @default(now())
+  completedAt      DateTime?
+  currentStep      Int                      @default(1)
+  totalSteps       Int
+  copiedFields     String                   @default("[]")
   wasHelpful       Boolean?
-  difficultyRating Int? // 1-5
+  difficultyRating Int?
   feedback         String?
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  template ManufacturerFormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  template         ManufacturerFormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@index([registrationId])
   @@index([templateId])

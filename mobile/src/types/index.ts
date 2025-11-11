@@ -142,6 +142,7 @@ export interface PaginatedResponse<T> {
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
+  ForgotPassword: undefined;
 };
 
 export type RootStackParamList = {
@@ -151,6 +152,7 @@ export type RootStackParamList = {
   WarrantyDetails: { warrantyId: string };
   CameraCapture: undefined;
   EditProduct: { productId?: string };
+  AddWarranty: { productId?: string; warrantyId?: string };
   MultiImageCapture: undefined;
   EditProfile: undefined;
   Notifications: undefined;

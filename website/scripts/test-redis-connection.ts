@@ -16,7 +16,7 @@
  */
 
 import Redis from 'ioredis';
-import { Queue, Worker, QueueScheduler } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 
 // Colors for console output
 const colors = {

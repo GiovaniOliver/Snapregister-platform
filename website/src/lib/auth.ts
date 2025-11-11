@@ -109,6 +109,9 @@ export async function getSession(): Promise<UserSession | null> {
 
     if (!session) {
       console.warn('[Auth] Session token valid but not found in database');
+      // SECURITY: Don't try to clear cookie here - middleware handles invalid JWTs
+      // This can happen after database migration/reset when old tokens still exist
+      // The middleware will catch invalid tokens on next request
       return null;
     }
 

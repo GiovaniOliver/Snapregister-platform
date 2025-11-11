@@ -56,13 +56,18 @@ export const authService = {
   login: async (email: string, password: string): Promise<{ user: User; token: string }> => {
     try {
       // Make login request without auth token (skipAuth: true)
+      // Use shorter timeout and disable retries to fail fast
       const response = await api.post<LoginResponse>(
         API_ENDPOINTS.AUTH.LOGIN,
         {
           email: email.trim().toLowerCase(),
           password,
         },
-        { skipAuth: true } // Don't send auth token for login
+        { 
+          skipAuth: true, // Don't send auth token for login
+          timeout: 10000, // 10 second timeout for login
+          retry: false, // Disable retries to fail fast
+        }
       );
 
       // Validate response
@@ -87,9 +92,13 @@ export const authService = {
       };
     } catch (error: any) {
       if (__DEV__) {
-        console.error('[Auth] Login error:', error.message);
+        console.error('[Auth] Login error:', error);
       }
-      throw new Error(error.message || 'Login failed. Please check your credentials.');
+      // Extract error message from ApiError or regular Error
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (error?.response?.data?.error || 'Login failed. Please check your credentials.');
+      throw new Error(errorMessage);
     }
   },
 
@@ -120,6 +129,7 @@ export const authService = {
       }
 
       // Make signup request without auth token
+      // Use shorter timeout and disable retries to fail fast
       const response = await api.post<SignupResponse>(
         API_ENDPOINTS.AUTH.SIGNUP,
         {
@@ -128,7 +138,11 @@ export const authService = {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
         },
-        { skipAuth: true } // Don't send auth token for signup
+        { 
+          skipAuth: true, // Don't send auth token for signup
+          timeout: 10000, // 10 second timeout for signup
+          retry: false, // Disable retries to fail fast
+        }
       );
 
       // Validate response
@@ -153,9 +167,13 @@ export const authService = {
       };
     } catch (error: any) {
       if (__DEV__) {
-        console.error('[Auth] Signup error:', error.message);
+        console.error('[Auth] Signup error:', error);
       }
-      throw new Error(error.message || 'Signup failed. Please try again.');
+      // Extract error message from ApiError or regular Error
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (error?.response?.data?.error || 'Signup failed. Please try again.');
+      throw new Error(errorMessage);
     }
   },
 
@@ -190,7 +208,14 @@ export const authService = {
    */
   getSession: async (): Promise<User | null> => {
     try {
-      const response = await api.get<SessionResponse>(API_ENDPOINTS.AUTH.SESSION);
+      // Use shorter timeout and disable retries for session checks to avoid stalling
+      const response = await api.get<SessionResponse>(
+        API_ENDPOINTS.AUTH.SESSION,
+        {
+          timeout: 5000, // 5 second timeout for session checks
+          retry: false, // Disable retries to fail fast
+        }
+      );
 
       if (!response.data.user) {
         if (__DEV__) {

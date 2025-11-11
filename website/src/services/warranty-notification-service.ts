@@ -1,14 +1,12 @@
 // Warranty Notification Service
 
-import { PrismaClient } from '@prisma/client';
 import { Resend } from 'resend';
 import {
   WarrantyNotificationType,
   NotificationChannel,
 } from '@/types/warranty';
 import { format } from 'date-fns';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface NotificationParams {

@@ -2,10 +2,8 @@
 // POST /api/registration/submit - Create complete registration
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { getSession } from '@/lib/auth';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,11 +19,60 @@ export async function POST(req: NextRequest) {
 
     const { productInfo, userInfo } = body;
 
-    if (!productInfo || !userInfo) {
+    if (!productInfo) {
       return NextResponse.json(
-        { error: 'Product and user information are required' },
+        { error: 'Product information is required' },
         { status: 400 }
       );
+    }
+
+    // Get user profile data from database if userInfo not provided
+    let registrationUserInfo = userInfo;
+    if (!registrationUserInfo) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.id },
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          address: true,
+          addressLine2: true,
+          city: true,
+          state: true,
+          zipCode: true,
+          country: true,
+          dateOfBirth: true,
+          companyName: true,
+          alternatePhone: true,
+        }
+      });
+
+      if (!user) {
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        );
+      }
+
+      // Use login email for registration
+      const emailForRegistration = user.email;
+
+      registrationUserInfo = {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: emailForRegistration,
+        phone: user.phone || undefined,
+        address: user.address || undefined,
+        addressLine2: user.addressLine2 || undefined,
+        city: user.city || undefined,
+        state: user.state || undefined,
+        zipCode: user.zipCode || undefined,
+        country: user.country || 'US',
+        dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString().split('T')[0] : undefined,
+        companyName: user.companyName || undefined,
+        alternatePhone: user.alternatePhone || undefined,
+      };
     }
 
     // Create product record

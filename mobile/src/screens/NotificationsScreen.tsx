@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, fontSize, fontWeight } from '../constants/theme';
 import { api } from '../services/api';
+import { API_ENDPOINTS } from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface NotificationSettings {
@@ -41,8 +42,11 @@ const NotificationsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const loadSettings = async () => {
     try {
       // Try to load from backend first
-      const response = await api.get('/api/user/notification-settings');
-      if (response.data) {
+      const response = await api.get(`${API_ENDPOINTS.USER.UPDATE_SETTINGS}?type=notifications`);
+      if (response.data && response.data.notifications) {
+        setSettings(response.data.notifications);
+      } else if (response.data) {
+        // If response is the settings object directly
         setSettings(response.data);
       }
     } catch (error) {
@@ -75,8 +79,10 @@ const NotificationsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Save to backend
-      await api.put('/api/user/notification-settings', settings);
+      // Save to backend - send notifications as part of settings
+      await api.put(API_ENDPOINTS.USER.UPDATE_SETTINGS, {
+        notifications: settings,
+      });
 
       // Also save locally
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settings));

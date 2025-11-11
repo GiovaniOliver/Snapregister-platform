@@ -9,12 +9,17 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Product } from '../types';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Product, RootStackParamList } from '../types';
 import { productService } from '../services/productService';
 import { warrantyService } from '../services/warrantyService';
 import { colors } from '../constants/theme';
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 const HomeScreen: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalProducts: 0,
@@ -97,10 +102,16 @@ const HomeScreen: React.FC = () => {
       {/* Quick Actions */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <TouchableOpacity style={styles.actionButton}>
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('MultiImageCapture')}
+        >
           <Text style={styles.actionButtonText}>Scan New Device</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]}>
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.secondaryButton]}
+          onPress={() => navigation.navigate('EditProduct' as any, { productId: undefined })}
+        >
           <Text style={styles.secondaryButtonText}>Add Manually</Text>
         </TouchableOpacity>
       </View>
@@ -112,7 +123,11 @@ const HomeScreen: React.FC = () => {
           <Text style={styles.emptyText}>No products yet. Start by scanning a device!</Text>
         ) : (
           recentProducts.map((product) => (
-            <TouchableOpacity key={product.id} style={styles.productCard}>
+            <TouchableOpacity 
+              key={product.id} 
+              style={styles.productCard}
+              onPress={() => navigation.navigate('ProductDetails', { productId: product.id })}
+            >
               <Text style={styles.productName}>{product.name}</Text>
               <Text style={styles.productDetails}>
                 {product.brand} - {product.model}

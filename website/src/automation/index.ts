@@ -25,6 +25,22 @@ export {
   AppleAutomation
 } from './manufacturers';
 
+// Form Automation Services
+export { FormAutomationService } from './services/FormAutomationService';
+export type {
+  FormAutomationOptions,
+  FormFieldMapping,
+  FormAutomationResult
+} from './services/FormAutomationService';
+
+export { FormFieldMapper } from './services/FormFieldMapper';
+export type { DetectedField } from './services/FormFieldMapper';
+
+export { FormFieldDetector } from './services/FormFieldDetector';
+
+// Form Mappings Configuration
+export { getFormMappings, getAvailableMappings, FORM_MAPPINGS } from './config/form-mappings';
+
 // Convenience function for simple use cases
 export async function executeWarrantyRegistration(
   manufacturer: string,

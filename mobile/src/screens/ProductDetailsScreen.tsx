@@ -143,7 +143,7 @@ const ProductDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Warranties</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('AddWarranty' as any, { productId })}>
             <Ionicons name="add-circle" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
@@ -177,7 +177,10 @@ const ProductDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.editButton}>
+        <TouchableOpacity 
+          style={styles.editButton}
+          onPress={() => navigation.navigate('EditProduct' as any, { productId })}
+        >
           <Ionicons name="create-outline" size={20} color={colors.white} />
           <Text style={styles.editButtonText}>Edit Product</Text>
         </TouchableOpacity>
