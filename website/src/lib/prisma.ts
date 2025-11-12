@@ -1,24 +1,17 @@
 // Prisma Client Singleton
 // Prevents multiple instances in development with hot reload
 
-import { PrismaClient } from '@prisma/client/edge';
-import { withAccelerate } from '@prisma/extension-accelerate';
+import { PrismaClient } from '@prisma/client';
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: ReturnType<typeof createPrismaClient> | undefined;
+  prisma: PrismaClient | undefined;
 };
 
-function createPrismaClient() {
-  const client = new PrismaClient({
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   });
-  
-  // Extend with Accelerate for Prisma Cloud
-  return client.$extends(withAccelerate());
-}
-
-export const prisma =
-  globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
