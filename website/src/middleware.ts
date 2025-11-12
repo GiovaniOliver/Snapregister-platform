@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 import { rateLimitMiddleware } from './middleware/rateLimit';
-import { prisma } from './lib/prisma';
 
 // Routes that require authentication
 const protectedRoutes = ['/dashboard', '/register', '/products'];
@@ -51,6 +50,11 @@ export async function middleware(request: NextRequest) {
     return rateLimitResponse;
   }
 
+  // Skip Prisma checks for API routes (API routes handle their own auth)
+  if (pathname.startsWith('/api')) {
+    return NextResponse.next();
+  }
+
   const sessionToken = request.cookies.get('session')?.value;
 
   // Check if the current route is protected
@@ -67,68 +71,9 @@ export async function middleware(request: NextRequest) {
     // If JWT signature is valid, also check if session exists in database
     // This prevents infinite loops from tokens that exist but sessions don't (e.g., after DB migration)
     if (payload !== null) {
-      // For protected routes, verify session exists in database
-      // This prevents the loop where JWT is valid but session doesn't exist
-      if (isProtectedRoute) {
-        try {
-          const session = await prisma.session.findUnique({
-            where: { sessionToken },
-            select: { id: true, expiresAt: true },
-          });
-
-          if (!session) {
-            console.warn('[Middleware] JWT valid but session not found in database, clearing cookie');
-            isValidSession = false;
-            
-            // Clear cookie and redirect
-            const url = new URL('/login', request.url);
-            url.searchParams.set('error', 'session_not_found');
-            const response = NextResponse.redirect(url);
-            response.cookies.delete({
-              name: 'session',
-              path: '/',
-            });
-            return response;
-          }
-
-          // Check if session is expired
-          if (session.expiresAt < new Date()) {
-            console.warn('[Middleware] Session expired, clearing cookie');
-            isValidSession = false;
-            
-            // Delete expired session from database
-            await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
-            
-            // Clear cookie and redirect
-            const url = new URL('/login', request.url);
-            url.searchParams.set('error', 'session_expired');
-            const response = NextResponse.redirect(url);
-            response.cookies.delete({
-              name: 'session',
-              path: '/',
-            });
-            return response;
-          }
-
-          isValidSession = true;
-        } catch (dbError) {
-          // If database check fails, treat as invalid to be safe
-          console.error('[Middleware] Database check failed:', dbError);
-          isValidSession = false;
-          
-          const url = new URL('/login', request.url);
-          url.searchParams.set('error', 'session_check_failed');
-          const response = NextResponse.redirect(url);
-          response.cookies.delete({
-            name: 'session',
-            path: '/',
-          });
-          return response;
-        }
-      } else {
-        // For non-protected routes, just check JWT signature
-        isValidSession = true;
-      }
+      // For protected routes and auth routes, just check JWT signature
+      // Database session checks are handled in API routes
+      isValidSession = true;
     } else {
       // SECURITY: If token exists but is invalid, delete it and redirect to login
       // This prevents infinite loops from malformed/expired tokens
