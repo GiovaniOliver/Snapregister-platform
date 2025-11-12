@@ -9,6 +9,7 @@ import { BaseAutomation } from '../core/BaseAutomation';
 import { SamsungAutomation } from './SamsungAutomation';
 import { AppleAutomation } from './AppleAutomation';
 import { LGAutomation } from './LGAutomation';
+import { HPAutomation } from './HPAutomation';
 
 type AutomationConstructor = new () => BaseAutomation;
 
@@ -20,6 +21,7 @@ export class ManufacturerRegistry {
     this.register('Samsung', SamsungAutomation);
     this.register('Apple', AppleAutomation);
     this.register('LG', LGAutomation);
+    this.register('HP', HPAutomation);
 
     // Whirlpool brands (use same automation)
     // TODO: Implement WhirlpoolAutomation
@@ -31,7 +33,6 @@ export class ManufacturerRegistry {
 
     // TODO: Add more manufacturers
     // this.register('Sony', SonyAutomation);
-    // this.register('HP', HPAutomation);
     // this.register('Dell', DellAutomation);
   }
 
@@ -108,3 +109,4 @@ export class ManufacturerRegistry {
 export { SamsungAutomation } from './SamsungAutomation';
 export { AppleAutomation } from './AppleAutomation';
 export { LGAutomation } from './LGAutomation';
+export { HPAutomation } from './HPAutomation';
