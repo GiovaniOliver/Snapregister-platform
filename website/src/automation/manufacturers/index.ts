@@ -13,6 +13,10 @@ import { HPAutomation } from './HPAutomation';
 import { WhirlpoolAutomation } from './WhirlpoolAutomation';
 import { DellAutomation } from './DellAutomation';
 import { SonyAutomation } from './SonyAutomation';
+import { GEAutomation } from './GEAutomation';
+import { BoschAutomation } from './BoschAutomation';
+import { CanonAutomation } from './CanonAutomation';
+import { GenericAutomation } from './GenericAutomation';
 
 type AutomationConstructor = new () => BaseAutomation;
 
@@ -39,6 +43,22 @@ export class ManufacturerRegistry {
     // Sony
     this.register('Sony', SonyAutomation);
 
+    // GE Appliances (includes GE, GE Profile, GE Café, Monogram, Haier)
+    this.register('GE', GEAutomation);
+    this.register('GE Appliances', GEAutomation);
+    this.register('GE Profile', GEAutomation);
+    this.register('GE Café', GEAutomation);
+    this.register('Monogram', GEAutomation);
+    this.register('Haier', GEAutomation);
+
+    // Bosch Home Appliances (includes Bosch, Thermador, Gaggenau)
+    this.register('Bosch', BoschAutomation);
+    this.register('Thermador', BoschAutomation);
+    this.register('Gaggenau', BoschAutomation);
+
+    // Canon
+    this.register('Canon', CanonAutomation);
+
     // TODO: Add more manufacturers
   }
 
@@ -53,13 +73,29 @@ export class ManufacturerRegistry {
 
   /**
    * Get automation instance for a manufacturer
+   * Falls back to GenericAutomation for unknown manufacturers
    */
-  static get(manufacturer: string): BaseAutomation | null {
+  static get(manufacturer: string, registrationUrl?: string): BaseAutomation {
     const normalizedName = manufacturer.toLowerCase().trim();
     const AutomationClass = this.automations.get(normalizedName);
 
     if (!AutomationClass) {
-      console.warn(`No automation found for manufacturer: ${manufacturer}`);
+      console.warn(`No specific automation found for manufacturer: ${manufacturer}`);
+      console.log(`Using GenericAutomation for: ${manufacturer}`);
+      return new GenericAutomation(manufacturer, registrationUrl);
+    }
+
+    return new AutomationClass();
+  }
+
+  /**
+   * Get automation instance without fallback (returns null if not found)
+   */
+  static getSpecific(manufacturer: string): BaseAutomation | null {
+    const normalizedName = manufacturer.toLowerCase().trim();
+    const AutomationClass = this.automations.get(normalizedName);
+
+    if (!AutomationClass) {
       return null;
     }
 
@@ -119,3 +155,7 @@ export { HPAutomation } from './HPAutomation';
 export { WhirlpoolAutomation } from './WhirlpoolAutomation';
 export { DellAutomation } from './DellAutomation';
 export { SonyAutomation } from './SonyAutomation';
+export { GEAutomation } from './GEAutomation';
+export { BoschAutomation } from './BoschAutomation';
+export { CanonAutomation } from './CanonAutomation';
+export { GenericAutomation } from './GenericAutomation';

@@ -22,8 +22,20 @@ export { ManufacturerRegistry } from './manufacturers';
 
 export {
   SamsungAutomation,
-  AppleAutomation
+  AppleAutomation,
+  GenericAutomation
 } from './manufacturers';
+
+// Manufacturer Detection Service
+export { ManufacturerDetector } from './services/ManufacturerDetector';
+export type {
+  ManufacturerDetection,
+  ManufacturerUsageStats
+} from './services/ManufacturerDetector';
+
+// Mobile Automation Support
+export { MobileAutomationAdapter } from './core/MobileAutomationAdapter';
+export type { MobileConfig } from './core/MobileAutomationAdapter';
 
 // Form Automation Services
 export { FormAutomationService } from './services/FormAutomationService';
