@@ -11,6 +11,7 @@ import { AppleAutomation } from './AppleAutomation';
 import { LGAutomation } from './LGAutomation';
 import { HPAutomation } from './HPAutomation';
 import { WhirlpoolAutomation } from './WhirlpoolAutomation';
+import { DellAutomation } from './DellAutomation';
 
 type AutomationConstructor = new () => BaseAutomation;
 
@@ -31,9 +32,11 @@ export class ManufacturerRegistry {
     this.register('Amana', WhirlpoolAutomation);
     this.register('Jenn-Air', WhirlpoolAutomation);
 
+    // Dell
+    this.register('Dell', DellAutomation);
+
     // TODO: Add more manufacturers
     // this.register('Sony', SonyAutomation);
-    // this.register('Dell', DellAutomation);
   }
 
   /**
@@ -111,3 +114,4 @@ export { AppleAutomation } from './AppleAutomation';
 export { LGAutomation } from './LGAutomation';
 export { HPAutomation } from './HPAutomation';
 export { WhirlpoolAutomation } from './WhirlpoolAutomation';
+export { DellAutomation } from './DellAutomation';
