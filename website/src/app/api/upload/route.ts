@@ -19,6 +19,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { bunnyStorage } from '@/lib/bunny-storage';
+import { localStorage } from '@/lib/local-storage';
 
 // Allowed image types
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
@@ -99,15 +100,25 @@ export async function POST(req: NextRequest) {
       uploadFolder = `users/${session.id}/${folder}`;
     }
 
-    // Upload to Bunny.net
-    const uploadResult = await bunnyStorage.uploadFile(buffer, fileName, uploadFolder);
+    // Check if Bunny CDN is configured
+    const useBunnyCDN = process.env.BUNNY_STORAGE_ZONE && process.env.BUNNY_STORAGE_PASSWORD;
+
+    // Upload to Bunny.net or local storage
+    const uploadResult = useBunnyCDN
+      ? await bunnyStorage.uploadFile(buffer, fileName, uploadFolder)
+      : await localStorage.uploadFile(buffer, fileName, uploadFolder);
 
     if (!uploadResult.success) {
-      console.error('[Upload] Bunny.net upload failed:', uploadResult.error);
+      const storageType = useBunnyCDN ? 'Bunny.net' : 'local storage';
+      console.error(`[Upload] ${storageType} upload failed:`, uploadResult.error);
       return NextResponse.json(
         { success: false, error: uploadResult.error || 'Upload failed' },
         { status: 500 }
       );
+    }
+
+    if (!useBunnyCDN) {
+      console.log('[Upload] Using local storage (Bunny CDN not configured)');
     }
 
     return NextResponse.json({
