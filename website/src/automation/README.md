@@ -470,7 +470,7 @@ if (await this.hasCaptcha()) {
 4. ✅ HP Inc. (Complete)
 5. ✅ Whirlpool/KitchenAid/Maytag/Amana/Jenn-Air (Complete)
 6. ✅ Dell (Complete)
-7. 📋 Sony
+7. ✅ Sony (Complete)
 8. 📋 GE Appliances
 9. 📋 Bosch
 10. 📋 Canon

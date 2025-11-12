@@ -12,6 +12,7 @@ import { LGAutomation } from './LGAutomation';
 import { HPAutomation } from './HPAutomation';
 import { WhirlpoolAutomation } from './WhirlpoolAutomation';
 import { DellAutomation } from './DellAutomation';
+import { SonyAutomation } from './SonyAutomation';
 
 type AutomationConstructor = new () => BaseAutomation;
 
@@ -35,8 +36,10 @@ export class ManufacturerRegistry {
     // Dell
     this.register('Dell', DellAutomation);
 
+    // Sony
+    this.register('Sony', SonyAutomation);
+
     // TODO: Add more manufacturers
-    // this.register('Sony', SonyAutomation);
   }
 
   /**
@@ -115,3 +118,4 @@ export { LGAutomation } from './LGAutomation';
 export { HPAutomation } from './HPAutomation';
 export { WhirlpoolAutomation } from './WhirlpoolAutomation';
 export { DellAutomation } from './DellAutomation';
+export { SonyAutomation } from './SonyAutomation';
