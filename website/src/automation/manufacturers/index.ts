@@ -15,6 +15,7 @@ import { DellAutomation } from './DellAutomation';
 import { SonyAutomation } from './SonyAutomation';
 import { GEAutomation } from './GEAutomation';
 import { BoschAutomation } from './BoschAutomation';
+import { CanonAutomation } from './CanonAutomation';
 
 type AutomationConstructor = new () => BaseAutomation;
 
@@ -53,6 +54,9 @@ export class ManufacturerRegistry {
     this.register('Bosch', BoschAutomation);
     this.register('Thermador', BoschAutomation);
     this.register('Gaggenau', BoschAutomation);
+
+    // Canon
+    this.register('Canon', CanonAutomation);
 
     // TODO: Add more manufacturers
   }
@@ -136,3 +140,4 @@ export { DellAutomation } from './DellAutomation';
 export { SonyAutomation } from './SonyAutomation';
 export { GEAutomation } from './GEAutomation';
 export { BoschAutomation } from './BoschAutomation';
+export { CanonAutomation } from './CanonAutomation';
