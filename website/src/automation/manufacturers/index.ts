@@ -13,6 +13,7 @@ import { HPAutomation } from './HPAutomation';
 import { WhirlpoolAutomation } from './WhirlpoolAutomation';
 import { DellAutomation } from './DellAutomation';
 import { SonyAutomation } from './SonyAutomation';
+import { GEAutomation } from './GEAutomation';
 
 type AutomationConstructor = new () => BaseAutomation;
 
@@ -38,6 +39,14 @@ export class ManufacturerRegistry {
 
     // Sony
     this.register('Sony', SonyAutomation);
+
+    // GE Appliances (includes GE, GE Profile, GE Café, Monogram, Haier)
+    this.register('GE', GEAutomation);
+    this.register('GE Appliances', GEAutomation);
+    this.register('GE Profile', GEAutomation);
+    this.register('GE Café', GEAutomation);
+    this.register('Monogram', GEAutomation);
+    this.register('Haier', GEAutomation);
 
     // TODO: Add more manufacturers
   }
@@ -119,3 +128,4 @@ export { HPAutomation } from './HPAutomation';
 export { WhirlpoolAutomation } from './WhirlpoolAutomation';
 export { DellAutomation } from './DellAutomation';
 export { SonyAutomation } from './SonyAutomation';
+export { GEAutomation } from './GEAutomation';
