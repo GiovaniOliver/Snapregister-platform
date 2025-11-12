@@ -16,6 +16,7 @@ import { SonyAutomation } from './SonyAutomation';
 import { GEAutomation } from './GEAutomation';
 import { BoschAutomation } from './BoschAutomation';
 import { CanonAutomation } from './CanonAutomation';
+import { GenericAutomation } from './GenericAutomation';
 
 type AutomationConstructor = new () => BaseAutomation;
 
@@ -72,13 +73,29 @@ export class ManufacturerRegistry {
 
   /**
    * Get automation instance for a manufacturer
+   * Falls back to GenericAutomation for unknown manufacturers
    */
-  static get(manufacturer: string): BaseAutomation | null {
+  static get(manufacturer: string, registrationUrl?: string): BaseAutomation {
     const normalizedName = manufacturer.toLowerCase().trim();
     const AutomationClass = this.automations.get(normalizedName);
 
     if (!AutomationClass) {
-      console.warn(`No automation found for manufacturer: ${manufacturer}`);
+      console.warn(`No specific automation found for manufacturer: ${manufacturer}`);
+      console.log(`Using GenericAutomation for: ${manufacturer}`);
+      return new GenericAutomation(manufacturer, registrationUrl);
+    }
+
+    return new AutomationClass();
+  }
+
+  /**
+   * Get automation instance without fallback (returns null if not found)
+   */
+  static getSpecific(manufacturer: string): BaseAutomation | null {
+    const normalizedName = manufacturer.toLowerCase().trim();
+    const AutomationClass = this.automations.get(normalizedName);
+
+    if (!AutomationClass) {
       return null;
     }
 
@@ -141,3 +158,4 @@ export { SonyAutomation } from './SonyAutomation';
 export { GEAutomation } from './GEAutomation';
 export { BoschAutomation } from './BoschAutomation';
 export { CanonAutomation } from './CanonAutomation';
+export { GenericAutomation } from './GenericAutomation';

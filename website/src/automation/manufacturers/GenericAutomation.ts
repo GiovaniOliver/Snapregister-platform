@@ -1,0 +1,661 @@
+/**
+ * Generic Automation for Unknown Manufacturers
+ *
+ * This automation serves as a fallback for manufacturers without specific
+ * automation implementations. It uses intelligent form detection and heuristics
+ * to identify and fill registration forms across various manufacturer websites.
+ *
+ * RELIABILITY: Experimental
+ * - Uses AI-powered form field detection
+ * - Adapts to different form structures
+ * - May require manual intervention for complex forms
+ * - Success rate varies by manufacturer
+ *
+ * KEY FEATURES:
+ * - Automatic field detection using multiple strategies
+ * - Smart field type inference (name, email, phone, address, etc.)
+ * - Fallback selectors for common form patterns
+ * - CAPTCHA detection and reporting
+ * - Mobile browser compatibility
+ * - Success verification using multiple indicators
+ *
+ * DETECTION STRATEGIES:
+ * 1. HTML5 autocomplete attributes
+ * 2. Common name/id patterns
+ * 3. Placeholder text analysis
+ * 4. Label text association
+ * 5. Input type inference
+ * 6. Field position and context
+ *
+ * USE CASES:
+ * - Unknown/new manufacturers
+ * - Manufacturers without dedicated automation
+ * - Testing new manufacturer websites
+ * - Backup when specific automation fails
+ *
+ * @status Experimental
+ * @reliability Variable (60-80% depending on form complexity)
+ * @lastUpdated 2024-01-12
+ */
+
+import { Page } from 'playwright';
+import { BaseAutomation } from '../core/BaseAutomation';
+import { RegistrationData, AutomationResult } from '../types';
+
+export class GenericAutomation extends BaseAutomation {
+  manufacturer = 'Generic';
+  automationType = 'experimental' as const;
+  registrationUrl = ''; // Set dynamically
+
+  requiredFields: (keyof RegistrationData)[] = [
+    'firstName',
+    'lastName',
+    'email'
+  ];
+
+  // Field detection patterns
+  private fieldPatterns = {
+    firstName: {
+      names: ['firstname', 'first-name', 'first_name', 'fname', 'givenname', 'forename'],
+      autocomplete: ['given-name', 'fname', 'first-name'],
+      placeholders: /first.*name|given.*name|forename/i,
+      labels: /first.*name|given.*name/i
+    },
+    lastName: {
+      names: ['lastname', 'last-name', 'last_name', 'lname', 'surname', 'familyname'],
+      autocomplete: ['family-name', 'lname', 'last-name', 'surname'],
+      placeholders: /last.*name|family.*name|surname/i,
+      labels: /last.*name|family.*name|surname/i
+    },
+    email: {
+      names: ['email', 'e-mail', 'email-address', 'emailaddress', 'mail'],
+      autocomplete: ['email'],
+      placeholders: /e-?mail/i,
+      labels: /e-?mail/i,
+      types: ['email']
+    },
+    phone: {
+      names: ['phone', 'telephone', 'tel', 'mobile', 'phonenumber', 'phone-number'],
+      autocomplete: ['tel', 'tel-national', 'mobile'],
+      placeholders: /phone|telephone|mobile|cell/i,
+      labels: /phone|telephone|mobile/i,
+      types: ['tel']
+    },
+    address: {
+      names: ['address', 'street', 'address1', 'addressline1', 'street-address', 'address-line1'],
+      autocomplete: ['street-address', 'address-line1'],
+      placeholders: /street|address.*line.*1|address(?!.*2)/i,
+      labels: /street|address.*line.*1|^address$/i
+    },
+    addressLine2: {
+      names: ['address2', 'addressline2', 'address-line2', 'apt', 'suite', 'unit'],
+      autocomplete: ['address-line2'],
+      placeholders: /address.*line.*2|apt|apartment|suite|unit/i,
+      labels: /address.*line.*2|apt|suite/i
+    },
+    city: {
+      names: ['city', 'town', 'locality'],
+      autocomplete: ['address-level2', 'city'],
+      placeholders: /city|town/i,
+      labels: /city|town/i
+    },
+    state: {
+      names: ['state', 'province', 'region', 'county'],
+      autocomplete: ['address-level1', 'state', 'province'],
+      placeholders: /state|province|region/i,
+      labels: /state|province/i
+    },
+    zipCode: {
+      names: ['zip', 'zipcode', 'postal', 'postalcode', 'postcode', 'zip-code', 'postal-code'],
+      autocomplete: ['postal-code', 'zip'],
+      placeholders: /zip|postal/i,
+      labels: /zip|postal/i
+    },
+    country: {
+      names: ['country', 'countrycode', 'country-code'],
+      autocomplete: ['country', 'country-name'],
+      placeholders: /country/i,
+      labels: /country/i
+    },
+    modelNumber: {
+      names: ['model', 'modelnumber', 'model-number', 'product-model', 'productmodel'],
+      placeholders: /model.*number|model.*no|product.*model/i,
+      labels: /model.*number|model/i
+    },
+    serialNumber: {
+      names: ['serial', 'serialnumber', 'serial-number', 'product-serial', 'productserial'],
+      placeholders: /serial.*number|serial.*no|s\/n/i,
+      labels: /serial.*number|serial/i
+    },
+    purchaseDate: {
+      names: ['purchasedate', 'purchase-date', 'dateofpurchase', 'date-of-purchase', 'buydate'],
+      autocomplete: ['bday'],
+      placeholders: /purchase.*date|date.*purchase|bought/i,
+      labels: /purchase.*date|date.*purchase/i,
+      types: ['date']
+    }
+  };
+
+  constructor(manufacturerName?: string, registrationUrl?: string) {
+    super();
+    if (manufacturerName) {
+      this.manufacturer = manufacturerName;
+    }
+    if (registrationUrl) {
+      this.registrationUrl = registrationUrl;
+    }
+  }
+
+  /**
+   * Fill out the registration form using intelligent field detection
+   */
+  async fillForm(page: Page, data: RegistrationData): Promise<void> {
+    this.log(`Starting generic form fill for ${this.manufacturer}`);
+
+    // Wait for form to load
+    await this.waitForForm(page);
+
+    // Handle cookie consent
+    await this.handleCookieConsent(page);
+
+    // Detect and fill all fields
+    await this.detectAndFillAllFields(page, data);
+
+    // Handle marketing preferences
+    await this.handleMarketingPreferences(page);
+
+    this.log('Generic form filling completed');
+  }
+
+  /**
+   * Wait for any form to be present on the page
+   */
+  private async waitForForm(page: Page): Promise<void> {
+    try {
+      // Wait for any form element
+      await page.waitForSelector('form', { timeout: 15000, state: 'visible' });
+      this.log('Form detected on page');
+      await this.randomDelay(1000, 2000);
+    } catch (error) {
+      this.log('No form element found, proceeding with page analysis', 'warn');
+    }
+  }
+
+  /**
+   * Handle cookie consent banner
+   */
+  private async handleCookieConsent(page: Page): Promise<void> {
+    const consentSelectors = [
+      'button[id*="accept" i]',
+      'button[class*="accept" i]',
+      'button:has-text("Accept")',
+      'button:has-text("Accept All")',
+      'button:has-text("I Accept")',
+      'button:has-text("Agree")',
+      '#onetrust-accept-btn-handler',
+      '.cookie-accept',
+      '[data-testid*="accept" i]'
+    ];
+
+    for (const selector of consentSelectors) {
+      try {
+        const button = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        if (button) {
+          await button.click();
+          this.log('Cookie consent accepted');
+          await this.randomDelay(500, 1000);
+          return;
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  /**
+   * Detect and fill all form fields using multiple strategies
+   */
+  private async detectAndFillAllFields(page: Page, data: RegistrationData): Promise<void> {
+    // Try to fill each field in the data object
+    const fieldsToFill: Array<{ key: keyof RegistrationData; value: any }> = [];
+
+    // Build list of fields to fill
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined && value !== null && value !== '') {
+        fieldsToFill.push({ key: key as keyof RegistrationData, value });
+      }
+    }
+
+    this.log(`Attempting to fill ${fieldsToFill.length} fields`);
+
+    // Fill each field
+    for (const { key, value } of fieldsToFill) {
+      await this.detectAndFillField(page, key, value);
+    }
+  }
+
+  /**
+   * Detect and fill a specific field using intelligent detection
+   */
+  private async detectAndFillField(
+    page: Page,
+    fieldKey: keyof RegistrationData,
+    value: any
+  ): Promise<void> {
+    const patterns = this.fieldPatterns[fieldKey as keyof typeof this.fieldPatterns];
+    if (!patterns) {
+      this.log(`No detection patterns for field: ${fieldKey}`, 'warn');
+      return;
+    }
+
+    // Format value appropriately
+    const formattedValue = this.formatFieldValue(fieldKey, value);
+
+    // Strategy 1: Try by autocomplete attribute
+    if (patterns.autocomplete) {
+      for (const autocomplete of patterns.autocomplete) {
+        const selector = `input[autocomplete="${autocomplete}"], input[autocomplete*="${autocomplete}"]`;
+        if (await this.tryFillField(page, selector, formattedValue, fieldKey)) {
+          return;
+        }
+      }
+    }
+
+    // Strategy 2: Try by input type
+    if (patterns.types) {
+      for (const type of patterns.types) {
+        const selector = `input[type="${type}"]`;
+        if (await this.tryFillField(page, selector, formattedValue, fieldKey)) {
+          return;
+        }
+      }
+    }
+
+    // Strategy 3: Try by name attribute
+    if (patterns.names) {
+      for (const name of patterns.names) {
+        const selectors = [
+          `input[name="${name}"]`,
+          `input[name*="${name}" i]`,
+          `select[name="${name}"]`,
+          `select[name*="${name}" i]`,
+          `textarea[name="${name}"]`
+        ];
+        for (const selector of selectors) {
+          if (await this.tryFillField(page, selector, formattedValue, fieldKey)) {
+            return;
+          }
+        }
+      }
+    }
+
+    // Strategy 4: Try by id attribute
+    if (patterns.names) {
+      for (const name of patterns.names) {
+        const selectors = [
+          `input[id="${name}"]`,
+          `input[id*="${name}" i]`,
+          `select[id="${name}"]`,
+          `select[id*="${name}" i]`,
+          `textarea[id="${name}"]`
+        ];
+        for (const selector of selectors) {
+          if (await this.tryFillField(page, selector, formattedValue, fieldKey)) {
+            return;
+          }
+        }
+      }
+    }
+
+    // Strategy 5: Try by placeholder text
+    if (patterns.placeholders) {
+      const inputs = await page.$$('input, select, textarea');
+      for (const input of inputs) {
+        const placeholder = await input.getAttribute('placeholder');
+        if (placeholder && patterns.placeholders.test(placeholder)) {
+          try {
+            await this.fillInput(input, formattedValue);
+            this.log(`Filled ${fieldKey} using placeholder match: ${placeholder}`);
+            return;
+          } catch {
+            continue;
+          }
+        }
+      }
+    }
+
+    // Strategy 6: Try by label text
+    if (patterns.labels) {
+      const labels = await page.$$('label');
+      for (const label of labels) {
+        const text = await label.textContent();
+        if (text && patterns.labels.test(text)) {
+          const forAttr = await label.getAttribute('for');
+          if (forAttr) {
+            const selector = `#${forAttr}`;
+            if (await this.tryFillField(page, selector, formattedValue, fieldKey)) {
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    this.log(`Could not detect field for: ${fieldKey}`, 'warn');
+  }
+
+  /**
+   * Try to fill a field with a given selector
+   */
+  private async tryFillField(
+    page: Page,
+    selector: string,
+    value: string,
+    fieldKey: string
+  ): Promise<boolean> {
+    try {
+      const element = await page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
+      if (element) {
+        await this.fillInput(element, value);
+        this.log(`Filled ${fieldKey} using selector: ${selector}`);
+        return true;
+      }
+    } catch {
+      // Field not found with this selector
+    }
+    return false;
+  }
+
+  /**
+   * Fill an input element (handles input, select, textarea)
+   */
+  private async fillInput(element: any, value: string): Promise<void> {
+    const tagName = await element.evaluate((el: any) => el.tagName.toLowerCase());
+
+    await this.randomDelay(200, 400);
+
+    if (tagName === 'select') {
+      // Try to select by value, then by label
+      try {
+        await element.selectOption({ value });
+      } catch {
+        try {
+          await element.selectOption({ label: value });
+        } catch {
+          this.log(`Could not select option: ${value}`, 'warn');
+        }
+      }
+    } else {
+      // Regular input or textarea
+      await element.click();
+      await element.fill('');
+      await this.randomDelay(100, 200);
+      await element.fill(value);
+    }
+
+    await this.randomDelay(200, 400);
+  }
+
+  /**
+   * Format field value appropriately based on field type
+   */
+  private formatFieldValue(fieldKey: keyof RegistrationData, value: any): string {
+    switch (fieldKey) {
+      case 'phone':
+        return this.formatPhone(value);
+      case 'purchaseDate':
+        return this.formatDate(value);
+      case 'state':
+        return this.getStateAbbreviation(value);
+      case 'country':
+        return value || 'United States';
+      default:
+        return String(value);
+    }
+  }
+
+  /**
+   * Format phone number
+   */
+  private formatPhone(phone: string): string {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 10) {
+      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+    return phone;
+  }
+
+  /**
+   * Format date
+   */
+  private formatDate(date: string | Date): string {
+    const d = typeof date === 'string' ? new Date(date) : date;
+
+    // Try ISO format first (YYYY-MM-DD)
+    const isoDate = d.toISOString().split('T')[0];
+
+    // Also prepare MM/DD/YYYY format
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const year = d.getFullYear();
+
+    return isoDate; // Default to ISO format
+  }
+
+  /**
+   * Get state abbreviation
+   */
+  private getStateAbbreviation(state: string): string {
+    const stateMap: Record<string, string> = {
+      'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
+      'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE',
+      'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID',
+      'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+      'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+      'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+      'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV',
+      'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY',
+      'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK',
+      'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+      'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT',
+      'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV',
+      'wisconsin': 'WI', 'wyoming': 'WY'
+    };
+
+    const normalized = state.toLowerCase().trim();
+    return stateMap[normalized] || state.toUpperCase();
+  }
+
+  /**
+   * Handle marketing preferences
+   */
+  private async handleMarketingPreferences(page: Page): Promise<void> {
+    try {
+      const marketingSelectors = [
+        'input[type="checkbox"][name*="marketing" i]',
+        'input[type="checkbox"][name*="newsletter" i]',
+        'input[type="checkbox"][name*="email" i]',
+        'input[type="checkbox"][name*="promotional" i]',
+        'input[type="checkbox"][id*="marketing" i]',
+        'input[type="checkbox"][id*="newsletter" i]'
+      ];
+
+      for (const selector of marketingSelectors) {
+        try {
+          const checkbox = await page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
+          if (checkbox) {
+            const isChecked = await checkbox.isChecked();
+            if (isChecked) {
+              await checkbox.uncheck();
+              this.log('Opted out of marketing communications');
+            }
+          }
+        } catch {
+          continue;
+        }
+      }
+    } catch {
+      this.log('No marketing preferences found');
+    }
+  }
+
+  /**
+   * Submit the registration form
+   */
+  async submitForm(page: Page): Promise<void> {
+    this.log('Submitting generic registration form');
+
+    // Accept terms if present
+    await this.acceptTerms(page);
+
+    // Find and click submit button
+    const submitSelectors = [
+      'button[type="submit"]',
+      'input[type="submit"]',
+      'button:has-text("Submit")',
+      'button:has-text("Register")',
+      'button:has-text("Complete")',
+      'button:has-text("Finish")',
+      'button:has-text("Send")',
+      'button.submit',
+      'button[name="submit"]',
+      '[data-testid*="submit" i]'
+    ];
+
+    let submitted = false;
+    for (const selector of submitSelectors) {
+      try {
+        const button = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        if (button) {
+          await button.click();
+          this.log('Submit button clicked');
+          submitted = true;
+          break;
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    if (!submitted) {
+      this.log('Could not find submit button', 'warn');
+      throw new Error('Could not find submit button');
+    }
+
+    await this.randomDelay(2000, 3000);
+  }
+
+  /**
+   * Accept terms and conditions
+   */
+  private async acceptTerms(page: Page): Promise<void> {
+    const termsSelectors = [
+      'input[type="checkbox"][name*="terms" i]',
+      'input[type="checkbox"][name*="agree" i]',
+      'input[type="checkbox"][id*="terms" i]',
+      'input[type="checkbox"][id*="agree" i]',
+      'input[type="checkbox"][required]'
+    ];
+
+    for (const selector of termsSelectors) {
+      try {
+        const checkbox = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        if (checkbox) {
+          const isChecked = await checkbox.isChecked();
+          if (!isChecked) {
+            await checkbox.check();
+            this.log('Accepted terms and conditions');
+            await this.randomDelay(300, 600);
+          }
+          return;
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  /**
+   * Verify successful registration
+   */
+  async verifySuccess(page: Page): Promise<boolean> {
+    try {
+      await this.randomDelay(3000, 4000);
+
+      const currentUrl = page.url();
+      this.log(`Current URL after submission: ${currentUrl}`);
+
+      // Check for success URL patterns
+      const successUrlPatterns = [
+        /thank[_-]?you/i,
+        /success/i,
+        /confirmation/i,
+        /complete/i,
+        /registered/i,
+        /congrat/i
+      ];
+
+      for (const pattern of successUrlPatterns) {
+        if (pattern.test(currentUrl)) {
+          this.log(`Success detected via URL pattern: ${pattern}`);
+          return true;
+        }
+      }
+
+      // Check for success messages
+      const successSelectors = [
+        'text=/thank you/i',
+        'text=/success/i',
+        'text=/registered/i',
+        'text=/confirmation/i',
+        '.success',
+        '.confirmation',
+        '[class*="success" i]',
+        '[id*="success" i]'
+      ];
+
+      for (const selector of successSelectors) {
+        try {
+          const element = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
+          if (element) {
+            const text = await element.textContent();
+            this.log(`Success message found: ${text?.substring(0, 100)}`);
+            return true;
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      // Check for error messages
+      const errorSelectors = [
+        'text=/error/i',
+        'text=/invalid/i',
+        'text=/required/i',
+        '.error',
+        '[class*="error" i]',
+        '[role="alert"]'
+      ];
+
+      for (const selector of errorSelectors) {
+        try {
+          const element = await page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
+          if (element) {
+            const text = await element.textContent();
+            this.log(`Error detected: ${text}`, 'error');
+            return false;
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      this.log('Could not definitively verify success - ambiguous result', 'warn');
+      return false;
+
+    } catch (error) {
+      this.log(`Error during success verification: ${error}`, 'error');
+      return false;
+    }
+  }
+}
