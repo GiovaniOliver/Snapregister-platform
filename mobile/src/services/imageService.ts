@@ -3,7 +3,7 @@
  * Handles image compression, upload with progress tracking, and retry logic
  */
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { getAuthToken, clearAuthToken, ApiError } from './api';
 import { API_URL } from '../config/api';
