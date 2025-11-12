@@ -16,10 +16,14 @@ model User {
   lastName             String
   phone                String?
   address              String?
+  addressLine2         String?
   city                 String?
   state                String?
   zipCode              String?
   country              String             @default("US")
+  dateOfBirth          DateTime?
+  companyName          String?
+  alternatePhone       String?
   notificationsEnabled Boolean            @default(true)
   autoRegister         Boolean            @default(true)
   plan                 String             @default("FREE")
