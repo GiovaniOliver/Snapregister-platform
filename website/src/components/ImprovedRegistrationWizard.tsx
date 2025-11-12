@@ -45,15 +45,17 @@ export default function ImprovedRegistrationWizard() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save product');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || errorData.message || 'Failed to save product');
       }
 
       const result = await response.json();
       setSavedProductId(result.productId);
       setCurrentStep(WizardStep.MANUFACTURER_REGISTRATION);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving product:', error);
-      alert('Failed to save product. Please try again.');
+      const errorMessage = error.message || 'Failed to save product. Please try again.';
+      alert(errorMessage);
     }
   };
 

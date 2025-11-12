@@ -20,31 +20,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get user with profile data
+    // Get user with profile data - use findUnique without select to avoid field errors
     const user = await prisma.user.findUnique({
       where: { id: session.id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        address: true,
-        addressLine2: true,
-        city: true,
-        state: true,
-        zipCode: true,
-        country: true,
-        dateOfBirth: true,
-        companyName: true,
-        alternatePhone: true,
-        preferredContact: true,
-        profileCompleted: true,
-        notificationsEnabled: true,
-        autoRegister: true,
-        createdAt: true,
-        updatedAt: true,
-      }
     });
 
     if (!user) {
@@ -54,9 +32,33 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Return only the fields we need, handling missing fields gracefully
+    const profile = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      address: user.address,
+      addressLine2: (user as any).addressLine2 || null,
+      city: user.city,
+      state: user.state,
+      zipCode: user.zipCode,
+      country: user.country,
+      dateOfBirth: user.dateOfBirth,
+      companyName: user.companyName,
+      alternatePhone: user.alternatePhone,
+      preferredContact: (user as any).preferredContact || 'EMAIL',
+      profileCompleted: (user as any).profileCompleted || false,
+      notificationsEnabled: user.notificationsEnabled,
+      autoRegister: user.autoRegister,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+
     return NextResponse.json({
       success: true,
-      profile: user
+      profile
     });
   } catch (error: any) {
     console.error('Error fetching profile:', error);
@@ -119,54 +121,60 @@ export async function PUT(req: NextRequest) {
     ];
     const profileCompleted = essentialFields.every(field => field && field.trim() !== '');
 
-    // Update user profile
+    // Update user profile - build data object conditionally
+    const updateData: any = {
+      firstName: firstName?.trim(),
+      lastName: lastName?.trim(),
+      phone: phone?.trim() || null,
+      address: address?.trim() || null,
+      city: city?.trim() || null,
+      state: state?.trim() || null,
+      zipCode: zipCode?.trim() || null,
+      country: country?.trim() || 'US',
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      companyName: companyName?.trim() || null,
+      alternatePhone: alternatePhone?.trim() || null,
+      notificationsEnabled: notificationsEnabled !== undefined ? notificationsEnabled : true,
+      autoRegister: autoRegister !== undefined ? autoRegister : true,
+    };
+
+    // Include addressLine2 if provided
+    if (addressLine2 !== undefined) {
+      updateData.addressLine2 = addressLine2?.trim() || null;
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: session.id },
-      data: {
-        firstName: firstName?.trim(),
-        lastName: lastName?.trim(),
-        phone: phone?.trim() || null,
-        address: address?.trim() || null,
-        addressLine2: addressLine2?.trim() || null,
-        city: city?.trim() || null,
-        state: state?.trim() || null,
-        zipCode: zipCode?.trim() || null,
-        country: country?.trim() || 'US',
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        companyName: companyName?.trim() || null,
-        alternatePhone: alternatePhone?.trim() || null,
-        preferredContact: preferredContact || 'EMAIL',
-        profileCompleted,
-        notificationsEnabled: notificationsEnabled !== undefined ? notificationsEnabled : true,
-        autoRegister: autoRegister !== undefined ? autoRegister : true,
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        address: true,
-        addressLine2: true,
-        city: true,
-        state: true,
-        zipCode: true,
-        country: true,
-        dateOfBirth: true,
-        companyName: true,
-        alternatePhone: true,
-        preferredContact: true,
-        profileCompleted: true,
-        notificationsEnabled: true,
-        autoRegister: true,
-        updatedAt: true,
-      }
+      data: updateData,
     });
+
+    // Return only the fields we need
+    const profile = {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      phone: updatedUser.phone,
+      address: updatedUser.address,
+      addressLine2: (updatedUser as any).addressLine2 || null,
+      city: updatedUser.city,
+      state: updatedUser.state,
+      zipCode: updatedUser.zipCode,
+      country: updatedUser.country,
+      dateOfBirth: updatedUser.dateOfBirth,
+      companyName: updatedUser.companyName,
+      alternatePhone: updatedUser.alternatePhone,
+      preferredContact: (updatedUser as any).preferredContact || 'EMAIL',
+      profileCompleted: (updatedUser as any).profileCompleted || false,
+      notificationsEnabled: updatedUser.notificationsEnabled,
+      autoRegister: updatedUser.autoRegister,
+      updatedAt: updatedUser.updatedAt,
+    };
 
     return NextResponse.json({
       success: true,
       message: 'Profile updated successfully',
-      profile: updatedUser
+      profile
     });
   } catch (error: any) {
     console.error('Error updating profile:', error);
