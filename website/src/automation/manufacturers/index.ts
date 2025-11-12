@@ -14,6 +14,7 @@ import { WhirlpoolAutomation } from './WhirlpoolAutomation';
 import { DellAutomation } from './DellAutomation';
 import { SonyAutomation } from './SonyAutomation';
 import { GEAutomation } from './GEAutomation';
+import { BoschAutomation } from './BoschAutomation';
 
 type AutomationConstructor = new () => BaseAutomation;
 
@@ -47,6 +48,11 @@ export class ManufacturerRegistry {
     this.register('GE Café', GEAutomation);
     this.register('Monogram', GEAutomation);
     this.register('Haier', GEAutomation);
+
+    // Bosch Home Appliances (includes Bosch, Thermador, Gaggenau)
+    this.register('Bosch', BoschAutomation);
+    this.register('Thermador', BoschAutomation);
+    this.register('Gaggenau', BoschAutomation);
 
     // TODO: Add more manufacturers
   }
@@ -129,3 +135,4 @@ export { WhirlpoolAutomation } from './WhirlpoolAutomation';
 export { DellAutomation } from './DellAutomation';
 export { SonyAutomation } from './SonyAutomation';
 export { GEAutomation } from './GEAutomation';
+export { BoschAutomation } from './BoschAutomation';

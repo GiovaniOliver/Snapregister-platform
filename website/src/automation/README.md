@@ -472,7 +472,7 @@ if (await this.hasCaptcha()) {
 6. ✅ Dell (Complete)
 7. ✅ Sony (Complete)
 8. ✅ GE Appliances (Complete)
-9. 📋 Bosch
+9. ✅ Bosch/Thermador/Gaggenau (Complete)
 10. 📋 Canon
 
 ### Future Enhancements
