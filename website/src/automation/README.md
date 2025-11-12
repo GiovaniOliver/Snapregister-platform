@@ -468,7 +468,7 @@ if (await this.hasCaptcha()) {
 2. ✅ Apple (Complete)
 3. ✅ LG Electronics (Complete)
 4. ✅ HP Inc. (Complete)
-5. 🚧 Whirlpool/KitchenAid/Maytag (In Progress)
+5. ✅ Whirlpool/KitchenAid/Maytag/Amana/Jenn-Air (Complete)
 6. 📋 Dell
 7. 📋 Sony
 8. 📋 GE Appliances

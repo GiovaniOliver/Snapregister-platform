@@ -10,6 +10,7 @@ import { SamsungAutomation } from './SamsungAutomation';
 import { AppleAutomation } from './AppleAutomation';
 import { LGAutomation } from './LGAutomation';
 import { HPAutomation } from './HPAutomation';
+import { WhirlpoolAutomation } from './WhirlpoolAutomation';
 
 type AutomationConstructor = new () => BaseAutomation;
 
@@ -23,13 +24,12 @@ export class ManufacturerRegistry {
     this.register('LG', LGAutomation);
     this.register('HP', HPAutomation);
 
-    // Whirlpool brands (use same automation)
-    // TODO: Implement WhirlpoolAutomation
-    // this.register('Whirlpool', WhirlpoolAutomation);
-    // this.register('KitchenAid', WhirlpoolAutomation);
-    // this.register('Maytag', WhirlpoolAutomation);
-    // this.register('Amana', WhirlpoolAutomation);
-    // this.register('Jenn-Air', WhirlpoolAutomation);
+    // Whirlpool Corporation brands (all use same automation)
+    this.register('Whirlpool', WhirlpoolAutomation);
+    this.register('KitchenAid', WhirlpoolAutomation);
+    this.register('Maytag', WhirlpoolAutomation);
+    this.register('Amana', WhirlpoolAutomation);
+    this.register('Jenn-Air', WhirlpoolAutomation);
 
     // TODO: Add more manufacturers
     // this.register('Sony', SonyAutomation);
@@ -110,3 +110,4 @@ export { SamsungAutomation } from './SamsungAutomation';
 export { AppleAutomation } from './AppleAutomation';
 export { LGAutomation } from './LGAutomation';
 export { HPAutomation } from './HPAutomation';
+export { WhirlpoolAutomation } from './WhirlpoolAutomation';
