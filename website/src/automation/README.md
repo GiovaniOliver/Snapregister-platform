@@ -6,7 +6,7 @@ Production-ready Playwright automation for manufacturer warranty registration fo
 
 This system automates warranty registration across multiple manufacturers using Playwright. It provides:
 
-- **Reliable automation** for major manufacturers (Samsung, Apple, etc.)
+- **Reliable automation** for major manufacturers (Samsung, Apple, LG, HP, etc.)
 - **Intelligent retry logic** with exponential backoff
 - **Error classification** (timeout, CAPTCHA, form changes, etc.)
 - **Screenshot capture** for proof and debugging
@@ -22,6 +22,8 @@ src/automation/
 ├── manufacturers/
 │   ├── SamsungAutomation.ts      # Samsung-specific automation
 │   ├── AppleAutomation.ts        # Apple coverage check
+│   ├── LGAutomation.ts           # LG Electronics automation
+│   ├── HPAutomation.ts           # HP Inc. automation
 │   └── index.ts                  # Manufacturer registry
 ├── services/
 │   └── AutomationOrchestrator.ts # Main orchestration service
@@ -464,11 +466,11 @@ if (await this.hasCaptcha()) {
 
 1. ✅ Samsung (Complete)
 2. ✅ Apple (Complete)
-3. 🚧 Whirlpool/KitchenAid/Maytag (In Progress)
-4. 📋 LG Electronics
-5. 📋 Sony
-6. 📋 HP
-7. 📋 Dell
+3. ✅ LG Electronics (Complete)
+4. ✅ HP Inc. (Complete)
+5. ✅ Whirlpool/KitchenAid/Maytag/Amana/Jenn-Air (Complete)
+6. ✅ Dell (Complete)
+7. ✅ Sony (Complete)
 8. 📋 GE Appliances
 9. 📋 Bosch
 10. 📋 Canon

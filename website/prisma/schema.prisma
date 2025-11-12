@@ -24,6 +24,8 @@ model User {
   dateOfBirth          DateTime?
   companyName          String?
   alternatePhone       String?
+  preferredContact     String             @default("EMAIL")
+  profileCompleted     Boolean            @default(false)
   notificationsEnabled Boolean            @default(true)
   autoRegister         Boolean            @default(true)
   plan                 String             @default("FREE")
