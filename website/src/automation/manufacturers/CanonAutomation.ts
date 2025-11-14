@@ -61,7 +61,7 @@
 
 import { Page } from 'playwright';
 import { BaseAutomation } from '../core/BaseAutomation';
-import { RegistrationData, AutomationResult } from '../types';
+import { RegistrationData, AutomationResult } from '../core/BaseAutomation';
 
 export class CanonAutomation extends BaseAutomation {
   manufacturer = 'Canon';
@@ -83,32 +83,38 @@ export class CanonAutomation extends BaseAutomation {
     'country'
   ];
 
+  optionalFields: (keyof RegistrationData)[] = [
+    'retailer',
+    'productName',
+    'purchasePrice'
+  ];
+
   /**
    * Fill out the Canon registration form
    */
-  async fillForm(page: Page, data: RegistrationData): Promise<void> {
+  async fillForm(data: RegistrationData): Promise<void> {
     this.log('Starting Canon form fill process');
 
     // Wait for form to load
-    await this.waitForForm(page);
+    await this.waitForForm();
 
     // Handle cookie consent if present
-    await this.handleCookieConsent(page);
+    await this.handleCookieConsent();
 
     // Step 1: Product Information
-    await this.fillProductInfo(page, data);
+    await this.fillProductInfo(data);
 
     // Step 2: Personal Information
-    await this.fillPersonalInfo(page, data);
+    await this.fillPersonalInfo(data);
 
     // Step 3: Address Information
-    await this.fillAddressInfo(page, data);
+    await this.fillAddressInfo(data);
 
     // Step 4: Purchase Information
-    await this.fillPurchaseInfo(page, data);
+    await this.fillPurchaseInfo(data);
 
     // Handle marketing preferences (opt-out by default)
-    await this.handleMarketingPreferences(page);
+    await this.handleMarketingPreferences();
 
     this.log('Form filling completed');
   }
@@ -116,7 +122,7 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Wait for the registration form to be ready
    */
-  private async waitForForm(page: Page): Promise<void> {
+  private async waitForForm(): Promise<void> {
     try {
       // Wait for main form element or product registration container
       const formSelectors = [
@@ -129,7 +135,7 @@ export class CanonAutomation extends BaseAutomation {
 
       for (const selector of formSelectors) {
         try {
-          await page.waitForSelector(selector, { timeout: 10000, state: 'visible' });
+          await this.page.waitForSelector(selector, { timeout: 10000, state: 'visible' });
           this.log('Registration form loaded');
           await this.randomDelay(1000, 2000);
           return;
@@ -139,7 +145,7 @@ export class CanonAutomation extends BaseAutomation {
       }
 
       // If no specific form found, wait for general form element
-      await page.waitForSelector('form', { timeout: 5000, state: 'visible' });
+      await this.page.waitForSelector('form', { timeout: 5000, state: 'visible' });
       this.log('Generic form loaded');
     } catch (error) {
       throw new Error('Registration form did not load properly');
@@ -149,7 +155,7 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Handle cookie consent banner if present
    */
-  private async handleCookieConsent(page: Page): Promise<void> {
+  private async handleCookieConsent(): Promise<void> {
     try {
       const consentSelectors = [
         'button[id*="accept"]',
@@ -164,7 +170,7 @@ export class CanonAutomation extends BaseAutomation {
 
       for (const selector of consentSelectors) {
         try {
-          const button = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+          const button = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
           if (button) {
             await button.click();
             this.log('Cookie consent accepted');
@@ -183,18 +189,17 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Fill product information section
    */
-  private async fillProductInfo(page: Page, data: RegistrationData): Promise<void> {
+  private async fillProductInfo(data: RegistrationData): Promise<void> {
     this.log('Filling product information');
 
     // Product Category (auto-detect from model number)
     const category = this.inferProductCategory(data);
     if (category) {
-      await this.selectProductCategory(page, category);
+      await this.selectProductCategory(category);
     }
 
     // Model Number
     await this.fillFieldWithSelectors(
-      page,
       data.modelNumber,
       [
         'input[name="modelNumber"]',
@@ -208,7 +213,6 @@ export class CanonAutomation extends BaseAutomation {
 
     // Serial Number
     await this.fillFieldWithSelectors(
-      page,
       data.serialNumber,
       [
         'input[name="serialNumber"]',
@@ -223,7 +227,7 @@ export class CanonAutomation extends BaseAutomation {
     await this.randomDelay(500, 1000);
 
     // Check if there's a "Next" or "Continue" button for multi-step form
-    await this.clickNextIfPresent(page);
+    await this.clickNextIfPresent();
   }
 
   /**
@@ -264,7 +268,7 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Select product category from dropdown
    */
-  private async selectProductCategory(page: Page, category: string): Promise<void> {
+  private async selectProductCategory(category: string): Promise<void> {
     const categorySelectors = [
       'select[name="category"]',
       'select[name="productCategory"]',
@@ -274,7 +278,7 @@ export class CanonAutomation extends BaseAutomation {
 
     for (const selector of categorySelectors) {
       try {
-        const select = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const select = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (select) {
           // Try exact match
           try {
@@ -305,12 +309,11 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Fill personal information section
    */
-  private async fillPersonalInfo(page: Page, data: RegistrationData): Promise<void> {
+  private async fillPersonalInfo(data: RegistrationData): Promise<void> {
     this.log('Filling personal information');
 
     // First Name
     await this.fillFieldWithSelectors(
-      page,
       data.firstName,
       [
         'input[name="firstName"]',
@@ -323,7 +326,6 @@ export class CanonAutomation extends BaseAutomation {
 
     // Last Name
     await this.fillFieldWithSelectors(
-      page,
       data.lastName,
       [
         'input[name="lastName"]',
@@ -336,7 +338,6 @@ export class CanonAutomation extends BaseAutomation {
 
     // Email
     await this.fillFieldWithSelectors(
-      page,
       data.email,
       [
         'input[name="email"]',
@@ -348,39 +349,41 @@ export class CanonAutomation extends BaseAutomation {
     );
 
     // Phone
-    const phone = this.formatPhone(data.phone);
-    await this.fillFieldWithSelectors(
-      page,
-      phone,
-      [
-        'input[name="phone"]',
-        'input[name="telephone"]',
-        'input[type="tel"]',
-        'input[id*="phone"]',
-        'input[placeholder*="phone" i]'
-      ],
-      'Phone'
-    );
+    if (data.phone) {
+      const phone = this.formatPhone(data.phone);
+      await this.fillFieldWithSelectors(
+        phone,
+        [
+          'input[name="phone"]',
+          'input[name="telephone"]',
+          'input[type="tel"]',
+          'input[id*="phone"]',
+          'input[placeholder*="phone" i]'
+        ],
+        'Phone'
+      );
+    } else {
+      this.log('Phone number not provided, skipping phone field');
+    }
 
     await this.randomDelay(500, 1000);
 
     // Check if there's a "Next" or "Continue" button for multi-step form
-    await this.clickNextIfPresent(page);
+    await this.clickNextIfPresent();
   }
 
   /**
    * Fill address information section
    */
-  private async fillAddressInfo(page: Page, data: RegistrationData): Promise<void> {
+  private async fillAddressInfo(data: RegistrationData): Promise<void> {
     this.log('Filling address information');
 
     // Country (if available, default to US)
     const country = data.country || 'United States';
-    await this.selectCountry(page, country);
+    await this.selectCountry(country);
 
     // Street Address
     await this.fillFieldWithSelectors(
-      page,
       data.address,
       [
         'input[name="address"]',
@@ -396,7 +399,6 @@ export class CanonAutomation extends BaseAutomation {
     // Address Line 2 (if available)
     if (data.addressLine2) {
       await this.fillFieldWithSelectors(
-        page,
         data.addressLine2,
         [
           'input[name="address2"]',
@@ -412,7 +414,6 @@ export class CanonAutomation extends BaseAutomation {
 
     // City
     await this.fillFieldWithSelectors(
-      page,
       data.city,
       [
         'input[name="city"]',
@@ -423,11 +424,10 @@ export class CanonAutomation extends BaseAutomation {
     );
 
     // State
-    await this.selectState(page, data.state);
+    await this.selectState(data.state);
 
     // Zip Code
     await this.fillFieldWithSelectors(
-      page,
       data.zipCode,
       [
         'input[name="zipCode"]',
@@ -442,13 +442,13 @@ export class CanonAutomation extends BaseAutomation {
     await this.randomDelay(500, 1000);
 
     // Check if there's a "Next" or "Continue" button for multi-step form
-    await this.clickNextIfPresent(page);
+    await this.clickNextIfPresent();
   }
 
   /**
    * Select country from dropdown
    */
-  private async selectCountry(page: Page, country: string): Promise<void> {
+  private async selectCountry(country: string): Promise<void> {
     const countrySelectors = [
       'select[name="country"]',
       'select[id*="country"]',
@@ -457,7 +457,7 @@ export class CanonAutomation extends BaseAutomation {
 
     for (const selector of countrySelectors) {
       try {
-        const select = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const select = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (select) {
           // Try exact match
           try {
@@ -491,7 +491,12 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Select state from dropdown
    */
-  private async selectState(page: Page, state: string): Promise<void> {
+  private async selectState(state: string | undefined): Promise<void> {
+    if (!state) {
+      this.log('State not provided, skipping state selection');
+      return;
+    }
+
     const stateSelectors = [
       'select[name="state"]',
       'select[id*="state"]',
@@ -503,7 +508,7 @@ export class CanonAutomation extends BaseAutomation {
 
     for (const selector of stateSelectors) {
       try {
-        const select = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
+        const select = await this.page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
         if (select) {
           // Try by value (abbreviation)
           try {
@@ -539,7 +544,7 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Fill purchase information section
    */
-  private async fillPurchaseInfo(page: Page, data: RegistrationData): Promise<void> {
+  private async fillPurchaseInfo(data: RegistrationData): Promise<void> {
     if (!data.purchaseDate) {
       this.log('Purchase date not provided, skipping purchase info');
       return;
@@ -548,11 +553,11 @@ export class CanonAutomation extends BaseAutomation {
     this.log('Filling purchase information');
 
     // Purchase Date
-    await this.fillPurchaseDate(page, data.purchaseDate);
+    await this.fillPurchaseDate(data.purchaseDate);
 
     // Retailer (optional)
     if (data.retailer) {
-      await this.fillRetailer(page, data.retailer);
+      await this.fillRetailer(data.retailer);
     }
 
     await this.randomDelay(500, 1000);
@@ -561,7 +566,7 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Fill purchase date field
    */
-  private async fillPurchaseDate(page: Page, purchaseDate: string | Date): Promise<void> {
+  private async fillPurchaseDate(purchaseDate: string | Date): Promise<void> {
     const date = typeof purchaseDate === 'string' ? new Date(purchaseDate) : purchaseDate;
     const formattedDate = this.formatDate(date);
 
@@ -575,7 +580,7 @@ export class CanonAutomation extends BaseAutomation {
 
     for (const selector of dateSelectors) {
       try {
-        const input = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const input = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (input) {
           // Clear existing value
           await input.click();
@@ -610,7 +615,7 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Fill retailer field (text input or dropdown)
    */
-  private async fillRetailer(page: Page, retailer: string): Promise<void> {
+  private async fillRetailer(retailer: string): Promise<void> {
     // Try dropdown first
     const selectSelectors = [
       'select[name="retailer"]',
@@ -621,7 +626,7 @@ export class CanonAutomation extends BaseAutomation {
 
     for (const selector of selectSelectors) {
       try {
-        const select = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const select = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (select) {
           // Try exact match
           try {
@@ -654,7 +659,7 @@ export class CanonAutomation extends BaseAutomation {
 
     for (const selector of inputSelectors) {
       try {
-        const input = await page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
+        const input = await this.page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
         if (input) {
           await input.fill(retailer);
           this.log(`Filled retailer: ${retailer}`);
@@ -671,7 +676,7 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Handle marketing preferences (opt-out by default)
    */
-  private async handleMarketingPreferences(page: Page): Promise<void> {
+  private async handleMarketingPreferences(): Promise<void> {
     try {
       // Look for marketing opt-in checkbox
       const marketingSelectors = [
@@ -685,7 +690,7 @@ export class CanonAutomation extends BaseAutomation {
 
       for (const selector of marketingSelectors) {
         try {
-          const checkbox = await page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
+          const checkbox = await this.page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
           if (checkbox) {
             const isChecked = await checkbox.isChecked();
             if (isChecked) {
@@ -705,7 +710,7 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Click "Next" or "Continue" button if present in multi-step form
    */
-  private async clickNextIfPresent(page: Page): Promise<void> {
+  private async clickNextIfPresent(): Promise<void> {
     const nextSelectors = [
       'button:has-text("Next")',
       'button:has-text("Continue")',
@@ -717,7 +722,7 @@ export class CanonAutomation extends BaseAutomation {
 
     for (const selector of nextSelectors) {
       try {
-        const button = await page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
+        const button = await this.page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
         if (button) {
           await button.click();
           this.log('Clicked "Next" button');
@@ -735,11 +740,11 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Submit the registration form
    */
-  async submitForm(page: Page): Promise<void> {
+  async submitForm(): Promise<{ confirmationCode?: string }> {
     this.log('Submitting Canon registration form');
 
     // Accept terms and conditions if checkbox present
-    await this.acceptTerms(page);
+    await this.acceptTerms();
 
     // Find and click submit button
     const submitSelectors = [
@@ -756,7 +761,7 @@ export class CanonAutomation extends BaseAutomation {
     let submitted = false;
     for (const selector of submitSelectors) {
       try {
-        const button = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const button = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (button) {
           await button.click();
           this.log('Submit button clicked');
@@ -774,12 +779,14 @@ export class CanonAutomation extends BaseAutomation {
 
     // Wait for submission to process
     await this.randomDelay(2000, 3000);
+
+    return {};
   }
 
   /**
    * Accept terms and conditions
    */
-  private async acceptTerms(page: Page): Promise<void> {
+  private async acceptTerms(): Promise<void> {
     const termsSelectors = [
       'input[type="checkbox"][name*="terms"]',
       'input[type="checkbox"][name*="agree"]',
@@ -790,7 +797,7 @@ export class CanonAutomation extends BaseAutomation {
 
     for (const selector of termsSelectors) {
       try {
-        const checkbox = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const checkbox = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (checkbox) {
           const isChecked = await checkbox.isChecked();
           if (!isChecked) {
@@ -811,12 +818,12 @@ export class CanonAutomation extends BaseAutomation {
   /**
    * Verify successful registration
    */
-  async verifySuccess(page: Page): Promise<boolean> {
+  async verifySuccess(): Promise<boolean> {
     try {
       // Wait for navigation or success message
       await this.randomDelay(3000, 4000);
 
-      const currentUrl = page.url();
+      const currentUrl = this.page.url();
       this.log(`Current URL after submission: ${currentUrl}`);
 
       // Check for success URL patterns
@@ -852,7 +859,7 @@ export class CanonAutomation extends BaseAutomation {
 
       for (const selector of successSelectors) {
         try {
-          const element = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
+          const element = await this.page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
           if (element) {
             const text = await element.textContent();
             this.log(`Success message found: ${text?.substring(0, 100)}`);
@@ -871,7 +878,7 @@ export class CanonAutomation extends BaseAutomation {
         /product.*registered/i
       ];
 
-      const pageContent = await page.content();
+      const pageContent = await this.page.content();
       for (const pattern of confirmationPatterns) {
         if (pattern.test(pageContent)) {
           this.log('Confirmation number detected in page content');
@@ -892,7 +899,7 @@ export class CanonAutomation extends BaseAutomation {
 
       for (const selector of errorSelectors) {
         try {
-          const element = await page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
+          const element = await this.page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
           if (element) {
             const text = await element.textContent();
             this.log(`Error detected: ${text}`, 'error');
@@ -986,15 +993,23 @@ export class CanonAutomation extends BaseAutomation {
    * Helper to fill field with multiple selector attempts
    */
   private async fillFieldWithSelectors(
-    page: Page,
-    value: string,
+    value: string | undefined,
     selectors: string[],
     fieldName: string,
     required: boolean = true
   ): Promise<void> {
+    if (!value) {
+      if (required) {
+        this.log(`Required field not provided: ${fieldName}`, 'warn');
+      } else {
+        this.log(`Optional field not provided: ${fieldName}`);
+      }
+      return;
+    }
+
     for (const selector of selectors) {
       try {
-        const input = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const input = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (input) {
           await input.click();
           await input.fill('');

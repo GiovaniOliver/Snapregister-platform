@@ -6,7 +6,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { getAuthToken, clearAuthToken, ApiError } from './api';
-import { API_URL } from '../config/api';
+import { API_URL, API_ENDPOINTS } from '../config/api';
 import { MultiImageCapture, ProductAnalysisResult } from '../types';
 
 // Configuration constants
@@ -345,7 +345,7 @@ export const uploadAndAnalyzeImages = async (
           console.log(`[Image Service] Analyzing images (attempt ${attempt}/${RETRY_CONFIG.MAX_ATTEMPTS})`);
         }
 
-        const fullUrl = `${API_URL}/warranty/analyze`;
+        const fullUrl = `${API_URL}${API_ENDPOINTS.AI.ANALYZE_PRODUCT}`;
 
         const response = await fetch(fullUrl, {
           method: 'POST',
@@ -359,8 +359,26 @@ export const uploadAndAnalyzeImages = async (
         currentProgress = 90;
         onProgress?.(currentProgress);
 
-        // Parse response
-        const data = await response.json();
+        // Parse response - check if it's actually JSON first
+        const contentType = response.headers.get('content-type');
+        if (__DEV__) {
+          console.log('[Image Service] Response status:', response.status);
+          console.log('[Image Service] Response content-type:', contentType);
+        }
+
+        let data: any;
+        try {
+          const text = await response.text();
+          if (__DEV__) {
+            console.log('[Image Service] Response text (first 500 chars):', text.substring(0, 500));
+          }
+          data = JSON.parse(text);
+        } catch (parseError) {
+          if (__DEV__) {
+            console.error('[Image Service] Failed to parse response as JSON:', parseError);
+          }
+          throw new Error(`Server returned invalid response. Status: ${response.status}`);
+        }
 
         // Handle authentication errors
         if (response.status === 401) {

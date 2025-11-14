@@ -14,12 +14,16 @@ export interface RegistrationData {
   email: string;
   phone?: string;
 
+  // Company information (for B2B registrations)
+  companyName?: string;
+
   // Address
   address?: string;
   city?: string;
   state?: string;
   zipCode?: string;
   country?: string;
+  addressLine2?: string;
 
   // Product information
   productName: string;
@@ -360,6 +364,23 @@ export abstract class BaseAutomation {
   /**
    * Random delay to appear more human-like
    */
+  /**
+   * Log a message with manufacturer prefix
+   */
+  protected log(message: string, level: 'info' | 'warn' | 'error' = 'info'): void {
+    const prefix = `[${this.manufacturer}]`;
+    switch (level) {
+      case 'error':
+        console.error(prefix, message);
+        break;
+      case 'warn':
+        console.warn(prefix, message);
+        break;
+      default:
+        console.log(prefix, message);
+    }
+  }
+
   protected async randomDelay(min: number, max: number): Promise<void> {
     const delay = Math.floor(Math.random() * (max - min + 1)) + min;
     await this.page.waitForTimeout(delay);
@@ -384,7 +405,8 @@ export abstract class BaseAutomation {
   protected async fillWithFallback(
     selectors: string[],
     value: string,
-    fieldName: string
+    fieldName: string,
+    optional?: boolean
   ): Promise<void> {
     for (const selector of selectors) {
       try {
@@ -397,7 +419,10 @@ export abstract class BaseAutomation {
       }
     }
 
-    throw new Error(`Could not find ${fieldName} field with any selector`);
+    if (!optional) {
+      throw new Error(`Could not find ${fieldName} field with any selector`);
+    }
+    console.log(`[${this.manufacturer}] Optional field ${fieldName} not found, skipping`);
   }
 
   /**

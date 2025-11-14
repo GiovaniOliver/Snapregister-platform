@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     // 7. Prepare registration data
     // Use login email for registration
     const emailForRegistration = user.email;
-    
+
     const registrationData: RegistrationData = {
       // User info - use profile data
       firstName: user.firstName,
@@ -143,13 +143,17 @@ export async function POST(request: NextRequest) {
     };
 
     // 8. Create registration record
+    // Determine registration method based on success rate
+    // successRate >= 0.8 is considered reliable, otherwise experimental
+    const isReliable = manufacturer.successRate >= 0.8;
+
     const registration = await prisma.registration.create({
       data: {
         productId: product.id,
         userId: user.id,
         manufacturerId: manufacturer.id,
         registrationMethod:
-          manufacturer.automationType === 'reliable'
+          isReliable
             ? 'AUTOMATION_RELIABLE'
             : 'AUTOMATION_EXPERIMENTAL',
         status: 'PROCESSING',

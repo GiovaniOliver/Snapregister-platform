@@ -21,23 +21,28 @@ export function calculateWarrantyEndDate(
     return null; // Lifetime warranties don't expire
   }
 
-  const baseTargetDate = addMonths(startDate, durationMonths);
+  // Calculate target year and month without day overflow
+  const startYear = startDate.getUTCFullYear();
+  const startMonth = startDate.getUTCMonth();
+  const totalMonths = startYear * 12 + startMonth + durationMonths;
+  const targetYear = Math.floor(totalMonths / 12);
+  const targetMonth = totalMonths % 12;
 
-  const targetMonthAnchor = new Date(
-    baseTargetDate.getFullYear(),
-    baseTargetDate.getMonth(),
-    1,
-    baseTargetDate.getHours(),
-    baseTargetDate.getMinutes(),
-    baseTargetDate.getSeconds(),
-    baseTargetDate.getMilliseconds()
-  );
+  // Get last day of target month using Date constructor
+  // Date(year, month+1, 0) gives the last day of month
+  const lastDayOfTargetMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0));
+  const lastValidDay = lastDayOfTargetMonth.getUTCDate();
 
-  const lastValidDay = lastDayOfMonth(targetMonthAnchor).getDate();
-  const clampedDay = Math.min(startDate.getDate(), lastValidDay);
+  // Clamp day to last valid day of target month
+  const clampedDay = Math.min(startDate.getUTCDate(), lastValidDay);
 
-  const clampedDate = new Date(targetMonthAnchor);
-  clampedDate.setDate(clampedDay);
+  // Create final date with clamped day
+  const clampedDate = new Date(Date.UTC(
+    targetYear,
+    targetMonth,
+    clampedDay,
+    0, 0, 0, 0
+  ));
 
   return clampedDate;
 }

@@ -1,5 +1,6 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import type { UserSession } from '../lib/auth';
+import bcrypt from 'bcryptjs';
 
 const createSignJWTInstance = (payload: unknown, token?: string) => {
   const sign = jest.fn().mockResolvedValue(
@@ -26,35 +27,10 @@ const { SignJWT: mockSignJWT, jwtVerify: mockJwtVerify } = jest.mocked(
   jest.requireMock<typeof import('jose')>('jose')
 );
 
-// Use manual mock for jose
-jest.mock('jose');
-const { mockSignJWT, mockJwtVerify } = jest.requireMock('jose') as {
-  mockSignJWT: jest.Mock;
-  mockJwtVerify: jest.Mock;
-};
-
 
 // Mock next/headers
 const mockCookiesGet = jest.fn();
 const mockCookiesDelete = jest.fn();
-
-const mockCookies = jest.fn(() =>
-  Promise.resolve({
-    get: mockCookiesGet,
-    delete: mockCookiesDelete,
-  })
-);
-const mockHeadersGet = jest.fn();
-const mockHeaders = jest.fn(() =>
-  Promise.resolve({
-    get: mockHeadersGet,
-  })
-);
-
-jest.mock('next/headers', () => ({
-  cookies: mockCookies,
-  headers: mockHeaders,
-
 const mockHeadersGet = jest.fn();
 
 jest.mock('next/headers', () => ({
@@ -66,7 +42,6 @@ jest.mock('next/headers', () => ({
   headers: jest.fn(() => ({
     get: mockHeadersGet,
   })),
-
 }));
 
 // Mock Prisma
@@ -75,11 +50,7 @@ const mockPrismaSessionCreate = jest.fn();
 const mockPrismaSessionFindUnique = jest.fn();
 const mockPrismaSessionDelete = jest.fn();
 
-
-jest.mock('../lib/prisma.ts', () => ({
-=======
 jest.mock('../lib/prisma', () => ({
-
   __esModule: true,
   prisma: {
     user: {
@@ -92,34 +63,6 @@ jest.mock('../lib/prisma', () => ({
     },
   },
 }));
-
-
-let bcrypt: typeof import('bcryptjs').default;
-let hashPassword: typeof import('../lib/auth').hashPassword;
-let verifyPassword: typeof import('../lib/auth').verifyPassword;
-let createSession: typeof import('../lib/auth').createSession;
-let getSession: typeof import('../lib/auth').getSession;
-let destroySession: typeof import('../lib/auth').destroySession;
-let requireAuth: typeof import('../lib/auth').requireAuth;
-
-beforeAll(async () => {
-  const bcryptModule = await import('bcryptjs');
-  bcrypt = bcryptModule.default;
-
-  const authModule = await import('../lib/auth');
-  ({
-    hashPassword,
-    verifyPassword,
-    createSession,
-    getSession,
-    destroySession,
-    requireAuth,
-  } = authModule);
-});
-
-// Import after all mocks are set up
-import bcrypt from 'bcryptjs';
-import type { UserSession } from '../lib/auth';
 
 type AuthModule = typeof import('../lib/auth');
 

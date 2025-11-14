@@ -505,7 +505,7 @@ export class DellAutomation extends BaseAutomation {
     await this.randomDelay(300, 700);
 
     // Address Line 2 (optional)
-    if (data.address2) {
+    if (data.addressLine2) {
       await this.fillWithFallback(
         [
           'input[name="address2"]',
@@ -513,7 +513,7 @@ export class DellAutomation extends BaseAutomation {
           'input[id*="address2" i]',
           '#address2'
         ],
-        data.address2,
+        data.addressLine2,
         'Address Line 2',
         true
       );

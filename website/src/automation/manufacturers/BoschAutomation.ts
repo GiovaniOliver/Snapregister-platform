@@ -54,8 +54,7 @@
  */
 
 import { Page } from 'playwright';
-import { BaseAutomation } from '../core/BaseAutomation';
-import { RegistrationData, AutomationResult } from '../types';
+import { BaseAutomation, RegistrationData, AutomationResult } from '../core/BaseAutomation';
 
 export class BoschAutomation extends BaseAutomation {
   manufacturer = 'Bosch';
@@ -76,32 +75,38 @@ export class BoschAutomation extends BaseAutomation {
     'zipCode'
   ];
 
+  optionalFields: (keyof RegistrationData)[] = [
+    'retailer',
+    'country',
+    'purchasePrice'
+  ];
+
   /**
    * Fill out the Bosch registration form
    */
-  async fillForm(page: Page, data: RegistrationData): Promise<void> {
+  async fillForm(data: RegistrationData): Promise<void> {
     this.log('Starting Bosch form fill process');
 
     // Wait for form to load
-    await this.waitForForm(page);
+    await this.waitForForm();
 
     // Handle cookie consent if present
-    await this.handleCookieConsent(page);
+    await this.handleCookieConsent();
 
     // Personal Information Section
-    await this.fillPersonalInfo(page, data);
+    await this.fillPersonalInfo(data);
 
     // Product Information Section
-    await this.fillProductInfo(page, data);
+    await this.fillProductInfo(data);
 
     // Address Information Section
-    await this.fillAddressInfo(page, data);
+    await this.fillAddressInfo(data);
 
     // Purchase Information Section
-    await this.fillPurchaseInfo(page, data);
+    await this.fillPurchaseInfo(data);
 
     // Handle marketing preferences (opt-out by default)
-    await this.handleMarketingPreferences(page);
+    await this.handleMarketingPreferences();
 
     this.log('Form filling completed');
   }
@@ -109,10 +114,10 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Wait for the registration form to be ready
    */
-  private async waitForForm(page: Page): Promise<void> {
+  private async waitForForm(): Promise<void> {
     try {
       // Wait for main form element
-      await page.waitForSelector('form[name="registration"], form[id*="registration"], form.registration-form', {
+      await this.page.waitForSelector('form[name="registration"], form[id*="registration"], form.registration-form', {
         timeout: 15000,
         state: 'visible'
       });
@@ -129,7 +134,7 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Handle cookie consent banner if present
    */
-  private async handleCookieConsent(page: Page): Promise<void> {
+  private async handleCookieConsent(): Promise<void> {
     try {
       const consentSelectors = [
         'button[id*="accept"]',
@@ -143,7 +148,7 @@ export class BoschAutomation extends BaseAutomation {
 
       for (const selector of consentSelectors) {
         try {
-          const button = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+          const button = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
           if (button) {
             await button.click();
             this.log('Cookie consent accepted');
@@ -162,12 +167,11 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Fill personal information section
    */
-  private async fillPersonalInfo(page: Page, data: RegistrationData): Promise<void> {
+  private async fillPersonalInfo(data: RegistrationData): Promise<void> {
     this.log('Filling personal information');
 
     // First Name
     await this.fillFieldWithSelectors(
-      page,
       data.firstName,
       [
         'input[name="firstName"]',
@@ -180,7 +184,6 @@ export class BoschAutomation extends BaseAutomation {
 
     // Last Name
     await this.fillFieldWithSelectors(
-      page,
       data.lastName,
       [
         'input[name="lastName"]',
@@ -193,7 +196,6 @@ export class BoschAutomation extends BaseAutomation {
 
     // Email
     await this.fillFieldWithSelectors(
-      page,
       data.email,
       [
         'input[name="email"]',
@@ -205,19 +207,22 @@ export class BoschAutomation extends BaseAutomation {
     );
 
     // Phone
-    const phone = this.formatPhone(data.phone);
-    await this.fillFieldWithSelectors(
-      page,
-      phone,
-      [
-        'input[name="phone"]',
-        'input[name="telephone"]',
-        'input[type="tel"]',
-        'input[id*="phone"]',
-        'input[placeholder*="phone" i]'
-      ],
-      'Phone'
-    );
+    if (data.phone) {
+      const phone = this.formatPhone(data.phone);
+      await this.fillFieldWithSelectors(
+        phone,
+        [
+          'input[name="phone"]',
+          'input[name="telephone"]',
+          'input[type="tel"]',
+          'input[id*="phone"]',
+          'input[placeholder*="phone" i]'
+        ],
+        'Phone'
+      );
+    } else {
+      this.log('Phone number not provided, skipping phone field');
+    }
 
     await this.randomDelay(500, 1000);
   }
@@ -225,12 +230,11 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Fill product information section
    */
-  private async fillProductInfo(page: Page, data: RegistrationData): Promise<void> {
+  private async fillProductInfo(data: RegistrationData): Promise<void> {
     this.log('Filling product information');
 
     // Model Number (E-Nr)
     await this.fillFieldWithSelectors(
-      page,
       data.modelNumber,
       [
         'input[name="modelNumber"]',
@@ -245,7 +249,6 @@ export class BoschAutomation extends BaseAutomation {
 
     // Serial Number (FD/Ser.No.)
     await this.fillFieldWithSelectors(
-      page,
       data.serialNumber,
       [
         'input[name="serialNumber"]',
@@ -264,12 +267,11 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Fill address information section
    */
-  private async fillAddressInfo(page: Page, data: RegistrationData): Promise<void> {
+  private async fillAddressInfo(data: RegistrationData): Promise<void> {
     this.log('Filling address information');
 
     // Street Address
     await this.fillFieldWithSelectors(
-      page,
       data.address,
       [
         'input[name="address"]',
@@ -284,7 +286,6 @@ export class BoschAutomation extends BaseAutomation {
     // Address Line 2 (if available)
     if (data.addressLine2) {
       await this.fillFieldWithSelectors(
-        page,
         data.addressLine2,
         [
           'input[name="address2"]',
@@ -300,7 +301,6 @@ export class BoschAutomation extends BaseAutomation {
 
     // City
     await this.fillFieldWithSelectors(
-      page,
       data.city,
       [
         'input[name="city"]',
@@ -311,11 +311,10 @@ export class BoschAutomation extends BaseAutomation {
     );
 
     // State
-    await this.selectState(page, data.state);
+    await this.selectState(data.state);
 
     // Zip Code
     await this.fillFieldWithSelectors(
-      page,
       data.zipCode,
       [
         'input[name="zipCode"]',
@@ -333,7 +332,12 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Select state from dropdown
    */
-  private async selectState(page: Page, state: string): Promise<void> {
+  private async selectState(state: string | undefined): Promise<void> {
+    if (!state) {
+      this.log('State not provided, skipping state selection');
+      return;
+    }
+
     const stateSelectors = [
       'select[name="state"]',
       'select[id*="state"]',
@@ -344,7 +348,7 @@ export class BoschAutomation extends BaseAutomation {
 
     for (const selector of stateSelectors) {
       try {
-        const select = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
+        const select = await this.page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
         if (select) {
           // Try by value
           try {
@@ -377,7 +381,7 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Fill purchase information section
    */
-  private async fillPurchaseInfo(page: Page, data: RegistrationData): Promise<void> {
+  private async fillPurchaseInfo(data: RegistrationData): Promise<void> {
     if (!data.purchaseDate) {
       this.log('Purchase date not provided, skipping purchase info');
       return;
@@ -386,11 +390,11 @@ export class BoschAutomation extends BaseAutomation {
     this.log('Filling purchase information');
 
     // Purchase Date
-    await this.fillPurchaseDate(page, data.purchaseDate);
+    await this.fillPurchaseDate(data.purchaseDate);
 
     // Retailer (optional)
     if (data.retailer) {
-      await this.selectRetailer(page, data.retailer);
+      await this.selectRetailer(data.retailer);
     }
 
     await this.randomDelay(500, 1000);
@@ -399,7 +403,7 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Fill purchase date field
    */
-  private async fillPurchaseDate(page: Page, purchaseDate: string | Date): Promise<void> {
+  private async fillPurchaseDate(purchaseDate: string | Date): Promise<void> {
     const date = typeof purchaseDate === 'string' ? new Date(purchaseDate) : purchaseDate;
     const formattedDate = this.formatDate(date);
 
@@ -413,7 +417,7 @@ export class BoschAutomation extends BaseAutomation {
 
     for (const selector of dateSelectors) {
       try {
-        const input = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const input = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (input) {
           // Clear existing value
           await input.click();
@@ -448,7 +452,7 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Select retailer from dropdown if available
    */
-  private async selectRetailer(page: Page, retailer: string): Promise<void> {
+  private async selectRetailer(retailer: string): Promise<void> {
     const retailerSelectors = [
       'select[name="retailer"]',
       'select[id*="retailer"]',
@@ -457,7 +461,7 @@ export class BoschAutomation extends BaseAutomation {
 
     for (const selector of retailerSelectors) {
       try {
-        const select = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const select = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (select) {
           // Try exact match
           try {
@@ -484,7 +488,7 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Handle marketing preferences (opt-out by default)
    */
-  private async handleMarketingPreferences(page: Page): Promise<void> {
+  private async handleMarketingPreferences(): Promise<void> {
     try {
       // Look for marketing opt-in checkbox
       const marketingSelectors = [
@@ -497,7 +501,7 @@ export class BoschAutomation extends BaseAutomation {
 
       for (const selector of marketingSelectors) {
         try {
-          const checkbox = await page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
+          const checkbox = await this.page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
           if (checkbox) {
             const isChecked = await checkbox.isChecked();
             if (isChecked) {
@@ -517,11 +521,11 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Submit the registration form
    */
-  async submitForm(page: Page): Promise<void> {
+  async submitForm(): Promise<{ confirmationCode?: string }> {
     this.log('Submitting Bosch registration form');
 
     // Accept terms and conditions if checkbox present
-    await this.acceptTerms(page);
+    await this.acceptTerms();
 
     // Find and click submit button
     const submitSelectors = [
@@ -537,7 +541,7 @@ export class BoschAutomation extends BaseAutomation {
     let submitted = false;
     for (const selector of submitSelectors) {
       try {
-        const button = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const button = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (button) {
           await button.click();
           this.log('Submit button clicked');
@@ -555,12 +559,14 @@ export class BoschAutomation extends BaseAutomation {
 
     // Wait for submission to process
     await this.randomDelay(2000, 3000);
+
+    return {};
   }
 
   /**
    * Accept terms and conditions
    */
-  private async acceptTerms(page: Page): Promise<void> {
+  private async acceptTerms(): Promise<void> {
     const termsSelectors = [
       'input[type="checkbox"][name*="terms"]',
       'input[type="checkbox"][name*="agree"]',
@@ -571,7 +577,7 @@ export class BoschAutomation extends BaseAutomation {
 
     for (const selector of termsSelectors) {
       try {
-        const checkbox = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const checkbox = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (checkbox) {
           const isChecked = await checkbox.isChecked();
           if (!isChecked) {
@@ -592,12 +598,12 @@ export class BoschAutomation extends BaseAutomation {
   /**
    * Verify successful registration
    */
-  async verifySuccess(page: Page): Promise<boolean> {
+  async verifySuccess(): Promise<boolean> {
     try {
       // Wait for navigation or success message
       await this.randomDelay(3000, 4000);
 
-      const currentUrl = page.url();
+      const currentUrl = this.page.url();
       this.log(`Current URL after submission: ${currentUrl}`);
 
       // Check for success URL patterns
@@ -630,7 +636,7 @@ export class BoschAutomation extends BaseAutomation {
 
       for (const selector of successSelectors) {
         try {
-          const element = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
+          const element = await this.page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
           if (element) {
             const text = await element.textContent();
             this.log(`Success message found: ${text?.substring(0, 100)}`);
@@ -648,7 +654,7 @@ export class BoschAutomation extends BaseAutomation {
         /registration.*number/i
       ];
 
-      const pageContent = await page.content();
+      const pageContent = await this.page.content();
       for (const pattern of confirmationPatterns) {
         if (pattern.test(pageContent)) {
           this.log('Confirmation number detected in page content');
@@ -668,7 +674,7 @@ export class BoschAutomation extends BaseAutomation {
 
       for (const selector of errorSelectors) {
         try {
-          const element = await page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
+          const element = await this.page.waitForSelector(selector, { timeout: 2000, state: 'visible' });
           if (element) {
             const text = await element.textContent();
             this.log(`Error detected: ${text}`, 'error');
@@ -762,15 +768,23 @@ export class BoschAutomation extends BaseAutomation {
    * Helper to fill field with multiple selector attempts
    */
   private async fillFieldWithSelectors(
-    page: Page,
-    value: string,
+    value: string | undefined,
     selectors: string[],
     fieldName: string,
     required: boolean = true
   ): Promise<void> {
+    if (!value) {
+      if (required) {
+        this.log(`Required field not provided: ${fieldName}`, 'warn');
+      } else {
+        this.log(`Optional field not provided: ${fieldName}`);
+      }
+      return;
+    }
+
     for (const selector of selectors) {
       try {
-        const input = await page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
+        const input = await this.page.waitForSelector(selector, { timeout: 3000, state: 'visible' });
         if (input) {
           await input.click();
           await input.fill('');

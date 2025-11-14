@@ -446,7 +446,7 @@ async function main(): Promise<void> {
     process.exit(1);
   } finally {
     // Cleanup connections
-    if (queue) {
+    if (queue !== null) {
       try {
         await queue.close();
       } catch (error) {
@@ -454,7 +454,7 @@ async function main(): Promise<void> {
       }
     }
 
-    if (redis) {
+    if (redis !== null) {
       try {
         await redis.quit();
       } catch (error) {

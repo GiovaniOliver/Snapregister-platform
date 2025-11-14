@@ -36,13 +36,31 @@ interface SystemStatus {
   };
 }
 
+interface AutomationMetrics {
+  totalCount: number;
+  successRate: number;
+  averageLatency: number;
+  p95Latency: number;
+  p99Latency: number;
+  failureCount: number;
+  errorBreakdown?: Record<string, number>;
+}
+
+interface OCRMetrics {
+  totalCount: number;
+  successRate: number;
+  averageLatency: number;
+  p95Latency: number;
+  p99Latency: number;
+}
+
 interface DashboardData {
   period: string;
   timestamp: string;
   systemStatus: SystemStatus;
   metrics: {
-    automation: any;
-    ocr: any;
+    automation: AutomationMetrics;
+    ocr: OCRMetrics;
     byManufacturer: Array<{
       manufacturer: string;
       totalAttempts: number;
@@ -323,7 +341,7 @@ export default function MonitoringDashboard() {
             <CardContent>
               <div className="space-y-4">
                 {Object.entries(metrics.automation.errorBreakdown || {}).map(
-                  ([category, count]) => (
+                  ([category, count]: [string, number]) => (
                     <div key={category} className="flex items-center justify-between">
                       <span className="font-medium capitalize">
                         {category.replace('_', ' ')}

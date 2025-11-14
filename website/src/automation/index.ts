@@ -53,6 +53,14 @@ export { FormFieldDetector } from './services/FormFieldDetector';
 // Form Mappings Configuration
 export { getFormMappings, getAvailableMappings, FORM_MAPPINGS } from './config/form-mappings';
 
+// Re-export types for convenience
+import type { RegistrationData, AutomationResult } from './core/BaseAutomation';
+import type { OrchestratorOptions } from './services/AutomationOrchestrator';
+import { AutomationOrchestrator } from './services/AutomationOrchestrator';
+
+export type { RegistrationData as WarrantyData };
+export type { AutomationResult as RegistrationResult };
+
 // Convenience function for simple use cases
 export async function executeWarrantyRegistration(
   manufacturer: string,
@@ -67,8 +75,3 @@ export async function executeWarrantyRegistration(
     await orchestrator.shutdown();
   }
 }
-
-// Re-export types for convenience
-import type { RegistrationData, AutomationResult, OrchestratorOptions } from './core/BaseAutomation';
-export type { RegistrationData as WarrantyData };
-export type { AutomationResult as RegistrationResult };
